@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -8,16 +9,27 @@ from path_reference.paths import get_table_path
 class QueryTest:
     def __init__(self):
         table_path = get_table_path()
-        self.employee_table = pd.read_csv(Path(table_path, "employee.csv"))
-        self.project_table = pd.read_csv(Path(table_path, "project.csv"))
-        self.works_on_table = pd.read_csv(Path(table_path, "works_on.csv"))
-        self.example_a_table = pd.read_csv(Path(table_path, "example_a.csv"))
-        self.example_b_table = pd.read_csv(Path(table_path, "example_b.csv"))
-        self.employee_table['BIRTHDATE'] = pd.to_datetime(self.employee_table['BIRTHDATE'], format='%d/%m/%Y')
-        self.project_table["DSTART"] = pd.to_datetime(self.project_table["DSTART"], format='%d/%m/%Y')
-        self.project_table["DEND"] = pd.to_datetime(self.project_table["DEND"], format='%d/%m/%Y')
-        self.tables = {"employee": self.employee_table, "project": self.project_table, "works_on": self.works_on_table,
-                       "example_a": self.example_a_table, "example_b": self.example_b_table}
+        self.tables = self.map_all_tables()
+        self.convert_datetime_format()
+
+    @staticmethod
+    def map_all_tables() -> dict:
+        """ This function maps all tables in the table folder to a dictionary.
+         The key is the table name and the value is the table itself"""
+        table_dict = {}
+        table_folder = Path(get_table_path())
+        for table in table_folder.glob("*.csv"):
+            table_name = table.stem
+            table_dict[table_name] = pd.read_csv(table)
+        return table_dict
+
+    def convert_datetime_format(self):
+        """Converts all datetime columns to datetime format"""
+        for table in self.tables.values():
+            for column in table.columns:
+                first_value = str(table[column].iloc[0])
+                if re.match(r"\d{2}/\d{2}/\d{4}", first_value):
+                    table[column] = pd.to_datetime(table[column], format='%d/%m/%Y')
 
     def load_table(self, table_tag: str or pd.DataFrame) -> pd.DataFrame:
         return self.tables[table_tag] if isinstance(table_tag, str) else table_tag
@@ -30,6 +42,7 @@ class QueryTest:
         return self.selection(fourth, "BIRTHDATE > '01/01/1996'")
 
     def cross_product(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame:
+        """Returns a cross product of two tables. The final table should have the same columns as the first table"""
         original_table_a = self.load_table(table_a)
         original_table_b = self.load_table(table_b)
         return pd.merge(original_table_a, original_table_b, how="cross")
@@ -51,7 +64,8 @@ class QueryTest:
                           f" Table A has {a_type}, Table B has {b_type}"
         return True, "Tables are compatible"
 
-    def prepare_compatible_tables(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame or str:
+    def prepare_compatible_tables(self, table_a: str or pd.DataFrame,
+                                  table_b: str or pd.DataFrame) -> pd.DataFrame or str:
         """ Returns two tables that are compatible with each other. If they are not compatible, returns a string"""
         original_table_a = self.load_table(table_a)
         original_table_b = self.load_table(table_b)
@@ -80,10 +94,12 @@ class QueryTest:
                         indicator=True).query("_merge == 'left_only'").drop(columns=['_merge'])
 
     def projection(self, input_table: str or pd.DataFrame, desired_columns: list[str]) -> pd.DataFrame:
+        """Returns a table with only the desired columns"""
         original_table = self.load_table(input_table)
         return original_table[desired_columns]
 
     def selection(self, input_table: str or pd.DataFrame, instruction: str):
+        """Returns a table with only the rows that satisfy the instruction"""
         original_table = self.load_table(input_table)
         alL_columns = original_table.columns
         column, operator, value = instruction.split(" ")
@@ -98,7 +114,8 @@ class QueryTest:
 
 def __main():
     qt = QueryTest()
-    qt.set_up_query_example()
+    aux = qt.set_up_query_example()
+    return
 
 
 if __name__ == "__main__":
