@@ -11,16 +11,21 @@ class QueryTest:
         self.employee_table = pd.read_csv(Path(table_path, "employee.csv"))
         self.project_table = pd.read_csv(Path(table_path, "project.csv"))
         self.works_on_table = pd.read_csv(Path(table_path, "works_on.csv"))
+        self.example_a_table = pd.read_csv(Path(table_path, "example_a.csv"))
+        self.example_b_table = pd.read_csv(Path(table_path, "example_b.csv"))
         self.employee_table['BIRTHDATE'] = pd.to_datetime(self.employee_table['BIRTHDATE'], format='%d/%m/%Y')
         self.project_table["DSTART"] = pd.to_datetime(self.project_table["DSTART"], format='%d/%m/%Y')
         self.project_table["DEND"] = pd.to_datetime(self.project_table["DEND"], format='%d/%m/%Y')
-        self.tables = {"employee": self.employee_table, "project": self.project_table, "works_on": self.works_on_table}
+        self.tables = {"employee": self.employee_table, "project": self.project_table, "works_on": self.works_on_table,
+                       "example_a": self.example_a_table, "example_b": self.example_b_table}
 
     def load_table(self, table_tag: str or pd.DataFrame) -> pd.DataFrame:
         return self.tables[table_tag] if isinstance(table_tag, str) else table_tag
 
     def set_up_query(self):
-        intersection_test = self.intersection("employee", "project")
+        # intersection_test = self.intersection("example_a", "example_b")
+        # difference_test = self.difference("example_a", "example_b")
+        cross_product_test = self.cross_product("example_a", "example_b")
         # first = self.cross_product("employee", "works_on")
         # second = self.cross_product(first, "project")
         # third = self.selection(second, "PNAME = TWWPPHHHS1")
@@ -36,6 +41,8 @@ class QueryTest:
     @staticmethod
     def check_compatible_tables(table_a: pd.DataFrame, table_b: pd.DataFrame) -> tuple[bool, str]:
         # sourcery skip: assign-if-exp, reintroduce-else, swap-if-expression
+        """ Checks if two tables are compatible.
+        Returns a tuple of a boolean and a string. If the boolean is True, the tables are compatible."""
         a_shape, b_shape = table_a.shape[1], table_b.shape[1]
         a_type, b_type = list(table_a.dtypes), list(table_b.dtypes)
         condition_1 = a_shape == b_shape
@@ -48,30 +55,33 @@ class QueryTest:
                           f" Table A has {a_type}, Table B has {b_type}"
         return True, "Tables are compatible"
 
+    def prepare_compatible_tables(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame or str:
+        """ Returns two tables that are compatible with each other. If they are not compatible, returns a string"""
+        original_table_a = self.load_table(table_a)
+        original_table_b = self.load_table(table_b)
+        compatible_test, compatible_tag = self.check_compatible_tables(original_table_a, original_table_b)
+        if not compatible_test:
+            return compatible_test, compatible_tag
+        original_table_b.columns = original_table_a.columns
+        return original_table_a, original_table_b
+
     def union(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame or None:
         """Performs a union on two tables. The final table should have the same columns as the first table.
         Both tables should be compatible."""
-        original_table_a = self.load_table(table_a)
-        original_table_b = self.load_table(table_b)
-        compatible_test, compatible_tag = self.check_compatible_tables(original_table_a, original_table_b)
-        if not compatible_test:
-            return compatible_tag
-        original_table_b.columns = original_table_a.columns
-        return pd.concat([original_table_a, original_table_b], ignore_index=True).drop_duplicates()
+        prepared_table_a, prepared_table_b = self.prepare_compatible_tables(table_a, table_b)
+        return pd.concat([prepared_table_a, prepared_table_b], ignore_index=True).drop_duplicates()
 
     def intersection(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame or str:
         """Returns all rows that are in both tables. Both tables should be compatible"""
-        d1 = {"FN": ["Tom", "Amy", "Alicia", "Ernest"],
-              "LN": ["Ford", "Jones", "Smith", "Gilbert"]}
-        d2 = {"FName": ["Amy", "John", "Alicia"],
-              "Lname": ["Jones", "Brown", "Smith"]}
-        original_table_a = self.load_table(table_a)
-        original_table_b = self.load_table(table_b)
-        compatible_test, compatible_tag = self.check_compatible_tables(original_table_a, original_table_b)
-        if not compatible_test:
-            return compatible_tag
-        original_table_b.columns = original_table_a.columns
-        return pd.merge(original_table_a, original_table_b, how="inner")
+        prepared_table_a, prepared_table_b = self.prepare_compatible_tables(table_a, table_b)
+        prepared_table_b.columns = prepared_table_a.columns
+        return pd.merge(prepared_table_a, prepared_table_b, how="inner")
+
+    def difference(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame or str:
+        """Returns all rows that are in table_a but not in table_b. Both tables should be compatible"""
+        prepared_table_a, prepared_table_b = self.prepare_compatible_tables(table_a, table_b)
+        return pd.merge(prepared_table_a, prepared_table_b, how="left", indicator=True).query("_merge == 'left_only'").drop(
+            columns=['_merge'])
 
     def projection(self, input_table: str or pd.DataFrame, desired_columns: list[str]) -> pd.DataFrame:
         original_table = self.load_table(input_table)
