@@ -22,16 +22,12 @@ class QueryTest:
     def load_table(self, table_tag: str or pd.DataFrame) -> pd.DataFrame:
         return self.tables[table_tag] if isinstance(table_tag, str) else table_tag
 
-    def set_up_query(self):
-        # intersection_test = self.intersection("example_a", "example_b")
-        # difference_test = self.difference("example_a", "example_b")
-        cross_product_test = self.cross_product("example_a", "example_b")
-        # first = self.cross_product("employee", "works_on")
-        # second = self.cross_product(first, "project")
-        # third = self.selection(second, "PNAME = TWWPPHHHS1")
-        # fourth = self.selection(third, "ESSN = SSN")
-        # fifth = self.selection(fourth, "BIRTHDATE > '01/01/1996'")
-        return
+    def set_up_query_example(self):
+        first = self.cross_product("employee", "works_on")
+        second = self.cross_product(first, "project")
+        third = self.selection(second, "PNAME = TWWPPHHHS1")
+        fourth = self.selection(third, "ESSN = SSN")
+        return self.selection(fourth, "BIRTHDATE > '01/01/1996'")
 
     def cross_product(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame:
         original_table_a = self.load_table(table_a)
@@ -80,8 +76,8 @@ class QueryTest:
     def difference(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame or str:
         """Returns all rows that are in table_a but not in table_b. Both tables should be compatible"""
         prepared_table_a, prepared_table_b = self.prepare_compatible_tables(table_a, table_b)
-        return pd.merge(prepared_table_a, prepared_table_b, how="left", indicator=True).query("_merge == 'left_only'").drop(
-            columns=['_merge'])
+        return pd.merge(prepared_table_a, prepared_table_b, how="left",
+                        indicator=True).query("_merge == 'left_only'").drop(columns=['_merge'])
 
     def projection(self, input_table: str or pd.DataFrame, desired_columns: list[str]) -> pd.DataFrame:
         original_table = self.load_table(input_table)
@@ -102,7 +98,7 @@ class QueryTest:
 
 def __main():
     qt = QueryTest()
-    qt.set_up_query()
+    qt.set_up_query_example()
 
 
 if __name__ == "__main__":
