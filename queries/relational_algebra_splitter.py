@@ -46,12 +46,15 @@ class RelationalAlgebraSplitter:
             return instruction_pool
 
 
-def __main():
+def get_split_example():
     rat = RelationalAlgebraSplitter()
     sql_instruction = "SELECT LNAME FROM EMPLOYEE, WORKS_ON, PROJECT " \
                       "WHERE PNAME='AQUARIUS' AND PNUMBER=PNO AND ESSN=SSN AND BDATE>'1957-12-31"
-    aux = rat.split_pipeline(sql_instruction)
-    return
+    return rat.split_pipeline(sql_instruction)
+
+
+def __main():
+    return get_split_example()
 
 
 if __name__ == "__main__":
