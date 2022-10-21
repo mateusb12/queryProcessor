@@ -6,9 +6,8 @@ import pandas as pd
 from path_reference.paths import get_table_path
 
 
-class QueryTest:
+class RelationalAlgebraProcessor:
     def __init__(self):
-        table_path = get_table_path()
         self.tables = self.map_all_tables()
         self.convert_datetime_format()
 
@@ -113,7 +112,7 @@ class QueryTest:
 
 
 def __main():
-    qt = QueryTest()
+    qt = RelationalAlgebraProcessor()
     aux = qt.set_up_query_example()
     return
 
