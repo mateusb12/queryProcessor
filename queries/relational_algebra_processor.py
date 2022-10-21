@@ -34,13 +34,13 @@ class RelationalAlgebraProcessor:
         return self.tables[table_tag] if isinstance(table_tag, str) else table_tag
 
     def set_up_query_example(self):
-        first = self.cross_product("employee", "works_on")
-        second = self.cross_product(first, "project")
+        first = self.cartesian_product("employee", "works_on")
+        second = self.cartesian_product(first, "project")
         third = self.selection(second, "PNAME = TWWPPHHHS1")
         fourth = self.selection(third, "ESSN = SSN")
         return self.selection(fourth, "BIRTHDATE > '01/01/1996'")
 
-    def cross_product(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame:
+    def cartesian_product(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame) -> pd.DataFrame:
         """Returns a cross product of two tables. The final table should have the same columns as the first table"""
         original_table_a = self.load_table(table_a)
         original_table_b = self.load_table(table_b)
