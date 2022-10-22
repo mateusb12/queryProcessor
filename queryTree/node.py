@@ -13,7 +13,6 @@ class Node:
         self.right_children = None
         self.father = None
         self.sibling = None
-        # self.relational_instruction = 'EMPLOYEE ⨯ WORKS_ON'
         self.relational_instruction = input_relational_instruction
         self.size = len(self.content)
 
