@@ -31,6 +31,8 @@ class RelationalAlgebraProcessor:
                     table[column] = pd.to_datetime(table[column], format='%d/%m/%Y')
 
     def load_table(self, table_tag: str or pd.DataFrame) -> pd.DataFrame:
+        if isinstance(table_tag, str):
+            table_tag = table_tag.lower()
         return self.tables[table_tag] if isinstance(table_tag, str) else table_tag
 
     def set_up_query_example(self):
