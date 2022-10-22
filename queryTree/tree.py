@@ -4,10 +4,34 @@ import re
 class Tree:
     def __init__(self, full_expression: str):
         raw_expressions = re.split(r"\(|\)", full_expression)
-        expressions = [item for item in raw_expressions if item != ""]
-        self.full_expression = full_expression
-        expression_pot = full_expression.split(")")
-        print("original expression_pot: ", expression_pot)
+        self.expressions = [item for item in raw_expressions if item != ""]
+        self.all_expressions_fix(self.expressions)
+        pass
+
+    def all_expressions_fix(self, input_expressions: list[str]):
+        for item in input_expressions:
+            self.single_expression_fix(item)
+
+    def single_expression_fix(self, input_str):
+        multiple_selection_match = self.multiple_selections_check(input_str)
+        incomplete_cross_product_match = self.incomplete_cross_product_check(input_str)
+        if multiple_selection_match:
+            groups = self.multiple_selections_split(input_str)
+            for item in groups:
+                item = item.replace("'", "").replace(" ", "")
+            self.expressions.remove(input_str)
+            self.expressions.extend(groups)
+        if incomplete_cross_product_match:
+            group = incomplete_cross_product_match.group().replace("⨯", "")
+            new_expression = f"SELF ⨯ {group}"
+            self.expressions.remove(input_str)
+            self.expressions.append(new_expression)
+        return
+
+    def incomplete_cross_product_check(self, input_str: str):
+        """Incomplete cross product is when we have ⨯ but only 1 word after it"""
+        test_str = input_str.replace(" ", "")
+        return re.search(r"⨯\w+", test_str)
 
     @staticmethod
     def multiple_selections_check(string: str):
