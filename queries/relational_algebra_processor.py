@@ -38,7 +38,7 @@ class RelationalAlgebraProcessor:
     def set_up_query_example(self):
         first = self.cartesian_product("employee", "works_on")
         second = self.cartesian_product(first, "project")
-        third = self.selection(second, "PNAME = TWWPPHHHS1")
+        third = self.selection(input_table=second, column="PNAME", operator="=", value="TWWPPHHHS1")
         fourth = self.selection(third, "ESSN = SSN")
         return self.selection(fourth, "BIRTHDATE > '01/01/1996'")
 
@@ -99,11 +99,10 @@ class RelationalAlgebraProcessor:
         original_table = self.load_table(input_table)
         return original_table[desired_columns]
 
-    def selection(self, input_table: str or pd.DataFrame, instruction: str):
+    def selection(self, input_table: str or pd.DataFrame, column: str, operator: str = "=", value: str = ""):
         """Returns a table with only the rows that satisfy the instruction"""
         original_table = self.load_table(input_table)
         alL_columns = original_table.columns
-        column, operator, value = instruction.split(" ")
         right_value = value if value not in alL_columns else original_table[value]
         if operator == "=":
             return original_table[original_table[column] == right_value]

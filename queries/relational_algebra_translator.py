@@ -20,17 +20,21 @@ class RelationalAlgebraTranslator:
 
     def extract_selection(self):
         where_values = self.split_info["WHERE"]
+
         def selection_notation(item): return f"σ[{item[0]}{item[1]}{item[2]}]"
+
         new_where_values = [selection_notation(item) for item in where_values]
+
         def selection_two_items(x, y): return f"{x} ^ {y}"
+
         return reduce(selection_two_items, new_where_values)
 
     def extract_cartesian_product(self):
         from_values = self.split_info["FROM"]
+
         def cartesian_join(x, y): return f"({x} ⨯ {y})"
+
         return reduce(cartesian_join, from_values)
-
-
 
 
 def __main():
