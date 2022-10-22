@@ -19,19 +19,26 @@ class Tree:
             groups = self.multiple_selections_split(input_str)
             for item in groups:
                 item = item.replace("'", "").replace(" ", "")
+            current_expression_index = self.expressions.index(input_str)
             self.expressions.remove(input_str)
-            self.expressions.extend(groups)
+            self.expressions[current_expression_index:current_expression_index] = groups
         if incomplete_cross_product_match:
-            group = incomplete_cross_product_match.group().replace("⨯", "")
+            group = input_str.replace(" ", "").split("⨯")[1]
             new_expression = f"SELF ⨯ {group}"
+            current_expression_index = self.expressions.index(input_str)
             self.expressions.remove(input_str)
-            self.expressions.append(new_expression)
+            self.expressions[current_expression_index:current_expression_index] = [new_expression]
         return
 
-    def incomplete_cross_product_check(self, input_str: str):
+    @staticmethod
+    def incomplete_cross_product_check(input_str: str):
         """Incomplete cross product is when we have ⨯ but only 1 word after it"""
-        test_str = input_str.replace(" ", "")
-        return re.search(r"⨯\w+", test_str)
+        if "⨯" not in input_str:
+            return False
+        formatted_str = input_str.replace(" ", "")
+        test = formatted_str.split("⨯")
+        test = [item for item in test if item != ""]
+        return len(test) != 2
 
     @staticmethod
     def multiple_selections_check(string: str):
@@ -47,6 +54,8 @@ class Tree:
 def __main():
     t = Tree("π[LNAME](σ[PNAME='AQUARIUS'] ^ σ[PNUMBER=PNO] ^ σ[ESSN=SSN] ^ σ[BDATE>'1957-12-31']"
              "((((EMPLOYEE ⨯ WORKS_ON) ⨯ PROJECT))))")
+
+
 
 
 if __name__ == "__main__":
