@@ -6,7 +6,6 @@ class Tree:
         raw_expressions = re.split(r"\(|\)", full_expression)
         self.expressions = [item for item in raw_expressions if item != ""]
         self.all_expressions_fix(self.expressions)
-        pass
 
     def all_expressions_fix(self, input_expressions: list[str]):
         for item in input_expressions:
@@ -54,8 +53,7 @@ class Tree:
 def __main():
     t = Tree("π[LNAME](σ[PNAME='AQUARIUS'] ^ σ[PNUMBER=PNO] ^ σ[ESSN=SSN] ^ σ[BDATE>'1957-12-31']"
              "((((EMPLOYEE ⨯ WORKS_ON) ⨯ PROJECT))))")
-
-
+    return
 
 
 if __name__ == "__main__":

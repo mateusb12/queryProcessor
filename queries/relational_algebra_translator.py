@@ -1,11 +1,12 @@
 import random
 from functools import reduce
 
-from queries.relational_algebra_splitter import get_split_example
+from queries.relational_algebra_splitter import get_split_example, get_split_instruction_example
 
 
 class RelationalAlgebraTranslator:
     def __init__(self):
+        self.original_instruction = get_split_instruction_example()
         self.split_info = get_split_example()
 
     def translate(self):
