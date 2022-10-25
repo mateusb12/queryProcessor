@@ -1,14 +1,12 @@
 import random
 from functools import reduce
 
-from queries.relational_algebra_splitter import get_split_example, get_split_instruction_example
+from queries.relational_algebra_splitter import get_split_example, get_sql_instruction_example
 
 
 class RelationalAlgebraTranslator:
-    def __init__(self, sql_instruction: str):
-        # self.original_instruction = get_split_instruction_example()
-        self.original_instruction = sql_instruction
-        self.split_sql = get_split_example()
+    def __init__(self, sql_instructions: dict):
+        self.split_sql = sql_instructions
 
     def translate_sql(self) -> str:
         projection = self.__extract_projection()
@@ -39,7 +37,7 @@ class RelationalAlgebraTranslator:
 
 
 def __main():
-    rat = RelationalAlgebraTranslator(get_split_instruction_example())
+    rat = RelationalAlgebraTranslator(get_sql_instruction_example())
     aux = rat.translate_sql()
     return
 

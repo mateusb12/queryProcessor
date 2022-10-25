@@ -53,9 +53,9 @@ def get_split_example():
     return rat.split_pipeline(sql_instruction)
 
 
-def get_split_instruction_example():
+def get_sql_instruction_example():
     return "SELECT LNAME FROM EMPLOYEE, WORKS_ON, PROJECT " \
-           "WHERE PNAME='AQUARIUS' AND PNUMBER=PNO AND ESSN=SSN AND BIRTHDATE>'1957-12-31"
+           "WHERE PNAME='WVX3B8W3NR' AND PNUMBER=PNO AND ESSN=SSN AND BIRTHDATE>'1999-12-31"
 
 
 def __main():
