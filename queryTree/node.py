@@ -1,4 +1,5 @@
 import re
+from typing import Tuple, List, Union, Any, Optional
 
 import pandas as pd
 
@@ -6,7 +7,8 @@ from queries.relational_algebra_processor import RelationalAlgebraProcessor
 
 
 class Node:
-    def __init__(self, input_relational_instruction: str = "", input_processor: RelationalAlgebraProcessor = None):
+    def __init__(self, input_relational_instruction: str = "", input_processor: RelationalAlgebraProcessor = None,
+                 input_label: str = "A"):
         self.processor = input_processor
         self.content: pd.DataFrame = pd.DataFrame()
         self.left_children = None
@@ -15,6 +17,8 @@ class Node:
         self.sibling = None
         self.relational_instruction = input_relational_instruction
         self.size = len(self.content)
+        self.label = input_label
+        self.edges = None
 
     def analyze_node_instruction(self):
         # sourcery skip: use-getitem-for-re-match-groups, use-named-expression
@@ -33,6 +37,7 @@ class Node:
         if projection_match:
             column = projection_match.groups()[0]
             self.projection_operation(column)
+        self.edges = self.get_edge_list()
 
     def projection_operation(self, column: str):
         new_content = self.processor.projection(self.content, [column])
@@ -48,37 +53,63 @@ class Node:
         self.content = new_content
         self.size = len(self.content)
 
+    def get_self_content(self):
+        if self.left_children is not None:
+            return self.left_children.content
+        if self.right_children is not None:
+            return self.right_children.content
+
     def cartesian_operation(self, table_a: str, table_b: str):
         if self.left_children is None and table_a != "SELF":
             new_table_a = self.processor.load_table(table_a)
-            self.create_left_children(new_table_a)
+            self.create_left_children(content=new_table_a)
         if self.right_children is None and table_b != "SELF":
             new_table_b = self.processor.load_table(table_b)
-            self.create_right_children(new_table_b)
-        new_content = self.processor.cartesian_product(self.left_children.content, self.right_children.content)
+            self.create_right_children(content=new_table_b)
+        left_content = self.left_children.content if table_a != "SELF" else self.get_self_content()
+        right_content = self.right_children.content if table_b != "SELF" else self.get_self_content()
+        new_content = self.processor.cartesian_product(left_content, right_content)
         self.content = new_content
         self.size = len(self.content)
         self.relational_instruction = "SELF"
 
+    def create_new_children(self, content: pd.DataFrame, label: str = "A"):
+        new_node = Node(input_processor=self.processor, input_label=label)
+        new_node.father = self
+        new_node.content = content
+        new_node.size = len(content)
+        return new_node
+
     def create_left_children(self, content: pd.DataFrame):
-        self.left_children = Node(input_processor=self.processor)
-        self.left_children.father = self
-        self.left_children.content = content
-        self.left_children.size = len(content)
+        new_label = chr(ord(self.label) - 2)
+        self.left_children = self.create_new_children(content, new_label)
         self.left_children.sibling = self.right_children
 
     def create_right_children(self, content: pd.DataFrame):
-        self.right_children = Node(input_processor=self.processor)
-        self.right_children.father = self
-        self.right_children.content = content
-        self.right_children.size = len(content)
+        new_label = chr(ord(self.label) - 1)
+        self.right_children = self.create_new_children(content, new_label)
         self.right_children.sibling = self.left_children
 
-    def create_father(self, relational_instruction: str):
-        self.father = Node(input_relational_instruction=relational_instruction, input_processor=self.processor)
+    def create_father(self, relational_instruction: str, label: str = "A"):
+        self.father = Node(input_relational_instruction=relational_instruction, input_processor=self.processor,
+                           input_label=label)
         self.father.content = self.content
         self.father.left_children = self
         self.father.right_children = self.sibling
+
+    def get_edge_list(self):
+        left_children_label = self.left_children.label if self.left_children else None
+        right_children_label = self.right_children.label if self.right_children else None
+        left_edge = [self.label, left_children_label] if left_children_label else None
+        right_edge = [self.label, right_children_label] if right_children_label else None
+        if left_edge == right_edge:
+            return [left_edge]
+        if left_edge and right_edge:
+            return [left_edge, right_edge]
+        elif left_edge:
+            return [left_edge]
+        elif right_edge:
+            return [right_edge]
 
 
 def __main():
