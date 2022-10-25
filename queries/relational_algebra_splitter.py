@@ -59,7 +59,8 @@ def get_split_instruction_example():
 
 
 def __main():
-    return get_split_example()
+    aux = get_split_example()
+    return
 
 
 if __name__ == "__main__":
