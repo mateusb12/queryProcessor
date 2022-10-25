@@ -6,8 +6,8 @@ from queries.relational_algebra_processor import RelationalAlgebraProcessor
 
 
 class Node:
-    def __init__(self, input_relational_instruction: str = ""):
-        self.processor = RelationalAlgebraProcessor()
+    def __init__(self, input_relational_instruction: str = "", input_processor: RelationalAlgebraProcessor = None):
+        self.processor = input_processor
         self.content: pd.DataFrame = pd.DataFrame()
         self.left_children = None
         self.right_children = None
@@ -49,10 +49,10 @@ class Node:
         self.size = len(self.content)
 
     def cartesian_operation(self, table_a: str, table_b: str):
-        if self.left_children is None:
+        if self.left_children is None and table_a != "SELF":
             new_table_a = self.processor.load_table(table_a)
             self.create_left_children(new_table_a)
-        if self.right_children is None:
+        if self.right_children is None and table_b != "SELF":
             new_table_b = self.processor.load_table(table_b)
             self.create_right_children(new_table_b)
         new_content = self.processor.cartesian_product(self.left_children.content, self.right_children.content)
@@ -61,21 +61,21 @@ class Node:
         self.relational_instruction = "SELF"
 
     def create_left_children(self, content: pd.DataFrame):
-        self.left_children = Node()
+        self.left_children = Node(input_processor=self.processor)
         self.left_children.father = self
         self.left_children.content = content
         self.left_children.size = len(content)
         self.left_children.sibling = self.right_children
 
     def create_right_children(self, content: pd.DataFrame):
-        self.right_children = Node()
+        self.right_children = Node(input_processor=self.processor)
         self.right_children.father = self
         self.right_children.content = content
         self.right_children.size = len(content)
         self.right_children.sibling = self.left_children
 
     def create_father(self, relational_instruction: str):
-        self.father = Node(relational_instruction)
+        self.father = Node(input_relational_instruction=relational_instruction, input_processor=self.processor)
         self.father.content = self.content
         self.father.left_children = self
         self.father.right_children = self.sibling
