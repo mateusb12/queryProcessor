@@ -1,5 +1,6 @@
 from queries.relational_algebra_execution_order import RelationalAlgebraExecutionOrder
-from queries.relational_algebra_splitter import get_sql_instruction_example_A, RelationalAlgebraSplitter
+from queries.relational_algebra_splitter import get_sql_instruction_example_A, RelationalAlgebraSplitter, \
+    get_sql_instruction_example_B
 from queries.relational_algebra_translator import RelationalAlgebraTranslator
 
 
@@ -18,7 +19,7 @@ def relational_algebra_wrapper(sql_instruction: str) -> list[str]:
 
 
 def __main():
-    instruction_example = get_sql_instruction_example_A()
+    instruction_example = get_sql_instruction_example_B()
     aux = relational_algebra_wrapper(instruction_example)
     return
 

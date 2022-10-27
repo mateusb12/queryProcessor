@@ -1,7 +1,7 @@
 import random
 from functools import reduce
 
-from queries.relational_algebra_splitter import get_split_example, get_sql_instruction_example
+from queries.relational_algebra_splitter import get_split_example, get_sql_instruction_example_A
 
 
 class RelationalAlgebraTranslator:

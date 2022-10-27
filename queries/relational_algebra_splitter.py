@@ -32,8 +32,7 @@ class RelationalAlgebraSplitter:
         values = self.split_using_multiple_separators(sql, list(sorted_existing_tag_positions_dict.keys()))
         return dict(zip(sorted_existing_tag_positions_dict.keys(), values))
 
-    @staticmethod
-    def minor_split(key: str, value: str) -> Union[list[str], list[list[Union[str, Any]]]]:
+    def minor_split(self, key: str, value: str) -> Union[list[str], list[list[Union[str, Any]]]]:
         if key in {"SELECT", "FROM"}:
             aux = value.split(",")
             for index, item in enumerate(aux):
@@ -41,9 +40,10 @@ class RelationalAlgebraSplitter:
             return aux
         elif key == "WHERE":
             split_string = value.split(" ")
-            operators = ["=", ">", "<", "<=", ">=", "<>", "AND", "IN", "NOT IN"]
-            existing_operators = {item for piece, item in itertools.product(split_string, operators) if item in piece}
-            main_list = value.split("AND") if "AND" in existing_operators else [value]
+            operators = [" = ", " > ", " < ", " <= ", " >= ", " <> ", " AND ", " IN ", " NOT IN "]
+            # existing_operators = {item for piece, item in itertools.product(split_string, operators) if item in piece}
+            existing_operators = [item for item in operators if item in value]
+            main_list = value.split(" AND ") if " AND " in existing_operators else [value]
             instruction_pool = []
             for item in main_list:
                 instruction_operator = [operator for operator in existing_operators if operator in item][0]
@@ -56,8 +56,17 @@ class RelationalAlgebraSplitter:
         elif key == "JOIN":
             return value.split(",") if "," in value else [value.replace(" ", "")]
         elif key == "ON":
-            first_split = value.split("AND")
-            return value.split("=")
+            first_split = value.replace(" ", "").split("AND")
+            operators = ["=", ">", "<", "<=", ">=", "<>"]
+            existing_operators = list({item
+                                       for piece, item in itertools.product(first_split, operators) if item in piece})
+            output_pot = []
+            for item in first_split:
+                instruction_operator = [operator for operator in existing_operators if operator in item][0]
+                instruction_split = item.split(instruction_operator)
+                final_instruction = [instruction_split[0], instruction_operator, instruction_split[1]]
+                output_pot.append(final_instruction)
+            return output_pot
 
 
 def get_sql_instruction_example_A():
