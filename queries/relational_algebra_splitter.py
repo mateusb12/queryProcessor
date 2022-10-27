@@ -21,9 +21,45 @@ class RelationalAlgebraSplitter:
         return [z for y in (re.split('|'.join(r'\b{}\b'.format(x)
                                               for x in separators), z) for z in [input_str]) for z in y if z]
 
+    def handle_multiple_joins(self, tag_list: list[str], join_amount: int = 2):
+        for index, item in enumerate(tag_list):
+            if item == "JOIN":
+                tag_list[index] = "JOIN_A"
+            elif item == "ON":
+                tag_list[index] = "ON_A"
+        join_indexes = list(range(2, join_amount)) if join_amount != 2 else [2]
+        for item in join_indexes:
+            new_letter = chr(item + 64)
+            new_join = f"JOIN_{new_letter}"
+            new_on = f"ON_{new_letter}"
+            tag_list.insert(-1, new_join)
+            tag_list.insert(-1, new_on)
+        structured_sql = self.sql.replace(",", "").split(" ")
+        current_index = 0
+        for index, item in enumerate(structured_sql):
+            if item == "JOIN":
+                current_index += 1
+                structured_sql[index] = f"JOIN_{chr(current_index + 64)}"
+            elif item == "ON":
+                structured_sql[index] = f"ON_{chr(current_index + 64)}"
+        for replace_index, _ in enumerate(range(1, join_amount+1)):
+            join_position = self.sql.find(" JOIN ") + 5
+            struct_sql = list(self.sql)
+            struct_sql.insert(join_position, f"_{chr(replace_index + 65)}")
+            self.sql = "".join(struct_sql)
+            on_position = self.sql.find(" ON ") + 3
+            struct_sql = list(self.sql)
+            struct_sql.insert(on_position, f"_{chr(replace_index + 65)}")
+            self.sql = "".join(struct_sql)
+        return
+
     def major_split(self, sql: str) -> dict:  # sourcery skip: use-fstring-for-formatting
-        main_tags = ["SELECT", "FROM", "WHERE", "JOIN", "ON"]
+        main_tags = ["SELECT", "FROM", "JOIN", "ON", "WHERE"]
         existing_tags = [item for item in main_tags if item in sql.split(" ")]
+        join_amount = sql.count("JOIN")
+        if join_amount > 1:
+            self.handle_multiple_joins(existing_tags, join_amount)
+            sql = self.sql
         raw_split = sql.replace(",", "").split(" ")
         existing_tags_positions = [raw_split.index(item) for item in existing_tags]
         sorted_existing_tag_positions_dict = dict(sorted(
@@ -82,9 +118,19 @@ def get_sql_instruction_example_B():
            "WHERE OPENING_BALANCE >= 235 AND UF = 'CE' AND ZIP_CODE <> '62930000'"
 
 
+def get_sql_instruction_example_C():
+    return "SELECT USER_ID, NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE, UF, ACCOUNT_DESCRIPTION " \
+           "FROM USER " \
+           "JOIN ACCOUNT " \
+           "ON USER.USER_ID = ACCOUNT.FK_USER_ID " \
+           "JOIN ACCOUNT_TYPE " \
+           "ON ACCOUNT_TYPE.ACCOUT_TYPE_ID = ACCOUNT.FK_ACCOUNT_TYPE_ID " \
+           "WHERE OPENING_BALANCE >= 300 AND UF = 'CE' AND ACCOUNT_DESCRIPTION <> 'Conta Corrente' AND USER_ID > 3"
+
+
 def get_split_example():
     rat = RelationalAlgebraSplitter()
-    sql_instruction = get_sql_instruction_example_B()
+    sql_instruction = get_sql_instruction_example_C()
     return rat.split_pipeline(sql_instruction)
 
 
