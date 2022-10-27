@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from path_reference.paths import get_table_path
@@ -104,12 +105,39 @@ class RelationalAlgebraProcessor:
         original_table = self.load_table(input_table)
         alL_columns = original_table.columns
         right_value = value if value not in alL_columns else original_table[value]
+        column_type = original_table[column].dtype
+        adjusted_right_value = self.normalize_values(right_value, column_type)
         if operator == "=":
-            return original_table[original_table[column] == right_value]
+            return original_table[original_table[column] == adjusted_right_value]
         elif operator == ">":
-            return original_table[original_table[column] > right_value]
+            return original_table[original_table[column] > adjusted_right_value]
         elif operator == "<":
-            return original_table[original_table[column] < right_value]
+            return original_table[original_table[column] < adjusted_right_value]
+
+    def normalize_values(self, value, column_type):
+        value_array = np.array(value)
+        value_type = value_array.dtype
+        different_types = value_type != column_type
+        if not different_types:
+            return value
+        new_array = self.numpy_type_conversion(value_array, column_type)
+        return new_array.max()
+
+    @staticmethod
+    def numpy_type_conversion(array_value, column_type):
+        if column_type == np.dtype("int64"):
+            new_array_value = array_value.astype(int)
+        elif column_type == np.dtype("float64"):
+            new_array_value = array_value.astype(float)
+        elif column_type == np.dtype("datetime64[ns]"):
+            new_array_value = array_value.astype("datetime64[ns]")
+        elif column_type == np.dtype("bool"):
+            new_array_value = array_value.astype(bool)
+        elif column_type == np.dtype("object"):
+            new_array_value = array_value.astype(str)
+        elif column_type == np.dtype("U1"):
+            new_array_value = array_value.astype(str)
+        return new_array_value
 
 
 def __main():

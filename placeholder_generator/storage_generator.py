@@ -144,7 +144,7 @@ def full_pipeline(size: int = 10000):
 
 
 def __main():
-    full_pipeline(1000)
+    full_pipeline(100)
 
 
 if __name__ == "__main__":
