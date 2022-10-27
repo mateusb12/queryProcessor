@@ -4,7 +4,8 @@ import pandas as pd
 
 from placeholder_generator.core_generator import generate_random_integer, generate_random_street_name, \
     generate_random_birthdate, generate_random_project_name, generate_random_tag
-from placeholder_generator.table_importer import account_type_table, user_table
+from placeholder_generator.table_importer import account_type_table, user_table, transaction_type_table, category_table, \
+    account_table
 
 
 def generate_random_user_table_line():
@@ -46,6 +47,17 @@ def generate_random_category_table_line():
     category_id = generate_random_integer(100000, 999999)
     category_description = generate_random_project_name(10)
     return f"{category_id},{category_description}"
+
+
+def generate_random_transaction_table_line():
+    transaction_id = generate_random_integer(100000, 999999)
+    date = generate_random_birthdate()
+    description = generate_random_project_name(20)
+    transaction_type_id = random.choice(transaction_type_table["TRANSACTION_TYPE_ID"])
+    category_id = random.choice(category_table["CATEGORY_ID"])
+    account_id = random.choice(account_table["ACCOUNT_ID"])
+    value = generate_random_integer(1000, 50000)
+    return f"{transaction_id},{date},{description},{transaction_type_id},{category_id},{account_id},{value}"
 
 
 def create_user_table_csv(size: int = 10000):
@@ -90,8 +102,18 @@ def create_category_csv(size: int = 10000):
             file.write(f"{generate_random_category_table_line()}\n")
 
 
+def create_transaction_csv(size: int = 10000):
+    """Create a csv with random transaction entries"""
+    with open("outputs/transaction.csv", "w") as file:
+        file.write("TRANSACTION_ID,DATE,DESCRIPTION,TRANSACTION_TYPE_ID,CATEGORY_ID,ACCOUNT_ID,VALUE\n")
+        for _ in range(size):
+            file.write(f"{generate_random_transaction_table_line()}\n")
+
+
 def recalculate_all_indexes():
-    table_dict = {"user": "USER_ID", "account_type": "ACCOUNT_TYPE_ID", "account": "ACCOUNT_ID"}
+    table_dict = {"user": "USER_ID", "account_type": "ACCOUNT_TYPE_ID", "account": "ACCOUNT_ID",
+                  "transaction_type": "TRANSACTION_TYPE_ID", "category": "CATEGORY_ID",
+                  "transaction": "TRANSACTION_ID"}
     for key, value in table_dict.items():
         recalculate_single_index(key, value)
 
@@ -114,7 +136,9 @@ def __main():
     create_account_csv()
     create_transaction_type_csv()
     create_category_csv()
-    return
+    recalculate_all_indexes()
+    create_transaction_csv()
+    recalculate_all_indexes()
 
 
 if __name__ == "__main__":
