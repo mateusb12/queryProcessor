@@ -23,9 +23,16 @@ def generate_random_street_name():
     return random.choice(random_street_table["Address"])
 
 
-def generate_random_house_number():
-    """Create a random house number"""
-    return random.choice(random_street_table["Postcode"])
+def generate_random_tag():
+    """Create a random house number in the format LLNNN-LNLN"""
+    pattern = "LLNNN-LNLN"
+    random_tag = ""
+    for character in pattern:
+        if character == "L":
+            random_tag += random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        elif character == "N":
+            random_tag += str(generate_random_integer(0, 9))
+    return random_tag
 
 
 def generate_random_project_name(size: int):
