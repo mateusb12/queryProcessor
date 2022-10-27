@@ -1,5 +1,5 @@
 from queries.relational_algebra_processor import RelationalAlgebraProcessor
-from queries.relational_algebra_splitter import get_sql_instruction_example
+from queries.relational_algebra_splitter import get_sql_instruction_example_A
 from queries.relational_algebra_wrapper import relational_algebra_wrapper
 from queryTree.node import Node
 
@@ -41,7 +41,7 @@ class Tree:
 
 
 def build_example_tree() -> Tree:
-    instruction_example = get_sql_instruction_example()
+    instruction_example = get_sql_instruction_example_A()
     relational_algebra_instructions = relational_algebra_wrapper(instruction_example)
     t = Tree(relational_algebra_instructions)
     t.build_tree()

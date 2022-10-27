@@ -53,9 +53,13 @@ def get_split_example():
     return rat.split_pipeline(sql_instruction)
 
 
-def get_sql_instruction_example():
+def get_sql_instruction_example_A():
     return "SELECT LNAME FROM EMPLOYEE, WORKS_ON, PROJECT " \
            "WHERE PNAME='WVX3B8W3NR' AND PNUMBER=PNO AND ESSN=SSN AND BIRTHDATE>'1999-12-31"
+
+
+def get_sql_instruction_example_B():
+    return "SELECT NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE FROM "
 
 
 def __main():

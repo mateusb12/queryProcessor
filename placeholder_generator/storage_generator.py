@@ -3,7 +3,7 @@ import random
 import pandas as pd
 
 from placeholder_generator.core_generator import generate_random_integer, generate_random_street_name, \
-    generate_random_birthdate, generate_random_project_name, generate_random_tag
+    generate_random_birthdate, generate_random_project_name, generate_random_tag, generate_random_first_name
 from placeholder_generator.table_importer import account_type_table, user_table, transaction_type_table, category_table, \
     account_table
 
@@ -13,13 +13,14 @@ def generate_random_user_table_line():
     ufs = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE",
            "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
     user_id = generate_random_integer(100000, 999999)
+    name = generate_random_first_name()
     address = generate_random_street_name().replace(",", " ")
     number = generate_random_integer(1000, 9999)
     district = generate_random_tag()
     zip_code = f"{generate_random_integer(10000, 99999)}-{generate_random_integer(100, 999)}"
     uf = random.choice(ufs)
     birthdate = generate_random_birthdate()
-    return f"{user_id},{address},{number},{district},{zip_code},{uf},{birthdate}"
+    return f"{user_id},{name},{address},{number},{district},{zip_code},{uf},{birthdate}"
 
 
 def generate_random_account_type_table_line():
@@ -63,7 +64,7 @@ def generate_random_transaction_table_line():
 def create_user_table_csv(size: int = 10000):
     """Create a csv with random user entries"""
     with open("outputs/user.csv", "w") as file:
-        file.write("USER_ID,ADDRESS,NUMBER,DISTRICT,ZIP_CODE,UF,BIRTHDATE\n")
+        file.write("USER_ID,NAME,ADDRESS,NUMBER,DISTRICT,ZIP_CODE,UF,BIRTHDATE\n")
         for _ in range(size):
             new_line = f"{generate_random_user_table_line()}\n"
             file.write(new_line)
@@ -73,7 +74,7 @@ def create_user_table_csv(size: int = 10000):
 def create_account_type_csv(size: int = 10000):
     """Create a csv with random account type entries"""
     with open("outputs/account_type.csv", "w") as file:
-        file.write("ACCOUNT_TYPE_ID,DESCRIPTION\n")
+        file.write("ACCOUNT_TYPE_ID,ACCOUNT_TYPE_DESCRIPTION\n")
         for _ in range(size):
             file.write(f"{generate_random_account_type_table_line()}\n")
 
@@ -81,7 +82,7 @@ def create_account_type_csv(size: int = 10000):
 def create_account_csv(size: int = 10000):
     """Create a csv with random account entries"""
     with open("outputs/account.csv", "w") as file:
-        file.write("ACCOUNT_ID,DESCRIPTION,ACCOUNT_TYPE_ID,USER_ID,OPENING_BALANCE\n")
+        file.write("ACCOUNT_ID,DESCRIPTION,FK_ACCOUNT_TYPE_ID,FK_USER_ID,OPENING_BALANCE\n")
         for _ in range(size):
             file.write(f"{generate_random_account_table_line()}\n")
 
@@ -89,7 +90,7 @@ def create_account_csv(size: int = 10000):
 def create_transaction_type_csv(size: int = 10000):
     """Create a csv with random transaction type entries"""
     with open("outputs/transaction_type.csv", "w") as file:
-        file.write("TRANSACTION_TYPE_ID,DESCRIPTION\n")
+        file.write("TRANSACTION_TYPE_ID,TRANSACTION_TYPE_DESCRIPTION\n")
         for _ in range(size):
             file.write(f"{generate_random_transaction_type_table_line()}\n")
 
@@ -97,7 +98,7 @@ def create_transaction_type_csv(size: int = 10000):
 def create_category_csv(size: int = 10000):
     """Create a csv with random category entries"""
     with open("outputs/category.csv", "w") as file:
-        file.write("CATEGORY_ID,DESCRIPTION\n")
+        file.write("CATEGORY_ID,CATEGORY_DESCRIPTION\n")
         for _ in range(size):
             file.write(f"{generate_random_category_table_line()}\n")
 
@@ -105,7 +106,8 @@ def create_category_csv(size: int = 10000):
 def create_transaction_csv(size: int = 10000):
     """Create a csv with random transaction entries"""
     with open("outputs/transaction.csv", "w") as file:
-        file.write("TRANSACTION_ID,DATE,DESCRIPTION,TRANSACTION_TYPE_ID,CATEGORY_ID,ACCOUNT_ID,VALUE\n")
+        file.write("TRANSACTION_ID,DATE,TRANSACTION_DESCRIPTION,"
+                   "FK_TRANSACTION_TYPE_ID,FK_CATEGORY_ID,FK_ACCOUNT_ID,VALUE\n")
         for _ in range(size):
             file.write(f"{generate_random_transaction_table_line()}\n")
 

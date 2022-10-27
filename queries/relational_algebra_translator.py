@@ -37,7 +37,8 @@ class RelationalAlgebraTranslator:
 
 
 def __main():
-    rat = RelationalAlgebraTranslator(get_sql_instruction_example())
+    split_example = get_split_example()
+    rat = RelationalAlgebraTranslator(split_example)
     aux = rat.translate_sql()
     return
 
