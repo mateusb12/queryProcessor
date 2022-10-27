@@ -21,6 +21,59 @@ class RelationalAlgebraSplitter:
         return [z for y in (re.split('|'.join(r'\b{}\b'.format(x)
                                               for x in separators), z) for z in [input_str]) for z in y if z]
 
+    def major_split(self, sql: str) -> dict:  # sourcery skip: use-fstring-for-formatting
+        main_tags = ["SELECT", "FROM", "JOIN", "ON", "WHERE"]
+        existing_tags = [item for item in main_tags if item in sql.split(" ")]
+        join_amount = sql.count("JOIN")
+        if join_amount > 1:
+            self.handle_multiple_joins(existing_tags, join_amount)
+            sql = self.sql
+        raw_split = sql.replace(",", "").split(" ")
+        existing_tags_positions = [raw_split.index(item) for item in existing_tags]
+        sorted_existing_tag_positions_dict = dict(sorted(
+            {existing_tags[i]: existing_tags_positions[i] for i in range(len(existing_tags))}
+            .items(), key=lambda item: item[1]))
+        keys = list(sorted_existing_tag_positions_dict.keys())
+        values = self.split_using_multiple_separators(sql, list(sorted_existing_tag_positions_dict.keys()))
+        return dict(zip(keys, values))
+
+    @staticmethod
+    def minor_split(key: str, value: str) -> Union[list[str], list[list[Union[str, Any]]]]:
+        if key in {"SELECT", "FROM"}:
+            aux = value.split(",")
+            for index, item in enumerate(aux):
+                aux[index] = item.replace(" ", "")
+            return aux
+        elif key == "WHERE":
+            split_string = value.split(" ")
+            operators = [" = ", " > ", " < ", " <= ", " >= ", " <> ", " AND ", " IN ", " NOT IN "]
+            # existing_operators = {item for piece, item in itertools.product(split_string, operators) if item in piece}
+            existing_operators = [item for item in operators if item in value]
+            main_list = value.split(" AND ") if " AND " in existing_operators else [value]
+            instruction_pool = []
+            for item in main_list:
+                instruction_operator = [operator for operator in existing_operators if operator in item][0]
+                instruction_split = item.split(instruction_operator)
+                final_instruction = [instruction_split[0], instruction_operator, instruction_split[1]]
+                for index, i in enumerate(final_instruction):
+                    final_instruction[index] = i.replace(" ", "")
+                instruction_pool.append(final_instruction)
+            return instruction_pool
+        elif "JOIN" in key:
+            return value.split(",") if "," in value else [value.replace(" ", "")]
+        elif "ON" in key:
+            first_split = value.replace(" ", "").split("AND")
+            operators = ["=", ">", "<", "<=", ">=", "<>"]
+            existing_operators = list({item
+                                       for piece, item in itertools.product(first_split, operators) if item in piece})
+            output_pot = []
+            for item in first_split:
+                instruction_operator = [operator for operator in existing_operators if operator in item][0]
+                instruction_split = item.split(instruction_operator)
+                final_instruction = [instruction_split[0], instruction_operator, instruction_split[1]]
+                output_pot.append(final_instruction)
+            return output_pot
+
     def handle_multiple_joins(self, tag_list: list[str], join_amount: int = 2):
         for index, item in enumerate(tag_list):
             if item == "JOIN":
@@ -52,57 +105,6 @@ class RelationalAlgebraSplitter:
             struct_sql.insert(on_position, f"_{chr(replace_index + 65)}")
             self.sql = "".join(struct_sql)
         return
-
-    def major_split(self, sql: str) -> dict:  # sourcery skip: use-fstring-for-formatting
-        main_tags = ["SELECT", "FROM", "JOIN", "ON", "WHERE"]
-        existing_tags = [item for item in main_tags if item in sql.split(" ")]
-        join_amount = sql.count("JOIN")
-        if join_amount > 1:
-            self.handle_multiple_joins(existing_tags, join_amount)
-            sql = self.sql
-        raw_split = sql.replace(",", "").split(" ")
-        existing_tags_positions = [raw_split.index(item) for item in existing_tags]
-        sorted_existing_tag_positions_dict = dict(sorted(
-            {existing_tags[i]: existing_tags_positions[i] for i in range(len(existing_tags))}
-            .items(), key=lambda item: item[1]))
-        values = self.split_using_multiple_separators(sql, list(sorted_existing_tag_positions_dict.keys()))
-        return dict(zip(sorted_existing_tag_positions_dict.keys(), values))
-
-    def minor_split(self, key: str, value: str) -> Union[list[str], list[list[Union[str, Any]]]]:
-        if key in {"SELECT", "FROM"}:
-            aux = value.split(",")
-            for index, item in enumerate(aux):
-                aux[index] = item.replace(" ", "")
-            return aux
-        elif key == "WHERE":
-            split_string = value.split(" ")
-            operators = [" = ", " > ", " < ", " <= ", " >= ", " <> ", " AND ", " IN ", " NOT IN "]
-            # existing_operators = {item for piece, item in itertools.product(split_string, operators) if item in piece}
-            existing_operators = [item for item in operators if item in value]
-            main_list = value.split(" AND ") if " AND " in existing_operators else [value]
-            instruction_pool = []
-            for item in main_list:
-                instruction_operator = [operator for operator in existing_operators if operator in item][0]
-                instruction_split = item.split(instruction_operator)
-                final_instruction = [instruction_split[0], instruction_operator, instruction_split[1]]
-                for index, i in enumerate(final_instruction):
-                    final_instruction[index] = i.replace(" ", "")
-                instruction_pool.append(final_instruction)
-            return instruction_pool
-        elif key == "JOIN":
-            return value.split(",") if "," in value else [value.replace(" ", "")]
-        elif key == "ON":
-            first_split = value.replace(" ", "").split("AND")
-            operators = ["=", ">", "<", "<=", ">=", "<>"]
-            existing_operators = list({item
-                                       for piece, item in itertools.product(first_split, operators) if item in piece})
-            output_pot = []
-            for item in first_split:
-                instruction_operator = [operator for operator in existing_operators if operator in item][0]
-                instruction_split = item.split(instruction_operator)
-                final_instruction = [instruction_split[0], instruction_operator, instruction_split[1]]
-                output_pot.append(final_instruction)
-            return output_pot
 
 
 def get_sql_instruction_example_A():
