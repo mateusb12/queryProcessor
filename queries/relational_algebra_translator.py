@@ -28,12 +28,21 @@ class RelationalAlgebraTranslator:
 
         return reduce(selection_two_items, new_where_values)
 
+    def __get_join_values(self):  # sourcery skip: use-next
+        joins = []
+        for key in self.split_sql.keys():
+            if key.startswith("JOIN"):
+                joins.extend(self.split_sql[key])
+        return joins
+
     def __extract_cartesian_product(self):
         from_values = self.split_sql["FROM"]
+        join_values = self.__get_join_values()
+        full_values = from_values + join_values
 
         def cartesian_join(x, y): return f"({x} ⨯ {y})"
 
-        return reduce(cartesian_join, from_values)
+        return reduce(cartesian_join, full_values)
 
 
 def __main():

@@ -74,8 +74,11 @@ class RelationalAlgebraExecutionOrder:
 
 
 def __main():
-    t = RelationalAlgebraExecutionOrder("π[LNAME](σ[PNAME='AQUARIUS'] ^ σ[PNUMBER=PNO] ^ σ[ESSN=SSN] ^ σ["
-                                        "BDATE>'1957-12-31'] ((((EMPLOYEE ⨯ WORKS_ON) ⨯ PROJECT))))")
+    projection = "π[USER_ID, NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE, UF, ACCOUNT_DESCRIPTION]"
+    selection = "(σ[OPENING_BALANCE>=300] ^ σ[UF='CE'] ^ σ[ACCOUNT_DESCRIPTION<>'ContaCorrente'] ^ σ[USER_ID>3]"
+    cartesian = "(((USER ⨯ ACCOUNT) ⨯ ACCOUNT_TYPE)))"
+    full_relational = f"{projection} {selection} {cartesian}"
+    t = RelationalAlgebraExecutionOrder(full_relational)
     order = t.export_execution_order()
     return
 
