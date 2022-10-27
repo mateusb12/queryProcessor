@@ -4,7 +4,11 @@ from typing import Union, List, Any
 
 
 class RelationalAlgebraSplitter:
+    def __init__(self):
+        self.sql = ""
+
     def split_pipeline(self, sql: str) -> dict:
+        self.sql = sql
         raw_dict = self.major_split(sql)
         for key, value in raw_dict.items():
             adjusted = self.minor_split(key, value)
@@ -19,9 +23,14 @@ class RelationalAlgebraSplitter:
 
     def major_split(self, sql: str) -> dict:  # sourcery skip: use-fstring-for-formatting
         main_tags = ["SELECT", "FROM", "WHERE", "JOIN", "ON"]
-        splitters = [item for item in main_tags if item in sql.split(" ")]
-        fragments = self.split_using_multiple_separators(sql, splitters)
-        return dict(zip(splitters, fragments))
+        existing_tags = [item for item in main_tags if item in sql.split(" ")]
+        raw_split = sql.replace(",", "").split(" ")
+        existing_tags_positions = [raw_split.index(item) for item in existing_tags]
+        sorted_existing_tag_positions_dict = dict(sorted(
+            {existing_tags[i]: existing_tags_positions[i] for i in range(len(existing_tags))}
+            .items(), key=lambda item: item[1]))
+        values = self.split_using_multiple_separators(sql, list(sorted_existing_tag_positions_dict.keys()))
+        return dict(zip(sorted_existing_tag_positions_dict.keys(), values))
 
     @staticmethod
     def minor_split(key: str, value: str) -> Union[list[str], list[list[Union[str, Any]]]]:
@@ -44,13 +53,11 @@ class RelationalAlgebraSplitter:
                     final_instruction[index] = i.replace(" ", "")
                 instruction_pool.append(final_instruction)
             return instruction_pool
-
-
-def get_split_example():
-    rat = RelationalAlgebraSplitter()
-    sql_instruction = "SELECT LNAME FROM EMPLOYEE, WORKS_ON, PROJECT " \
-                      "WHERE PNAME='AQUARIUS' AND PNUMBER=PNO AND ESSN=SSN AND BDATE>'1957-12-31"
-    return rat.split_pipeline(sql_instruction)
+        elif key == "JOIN":
+            return value.split(",") if "," in value else [value.replace(" ", "")]
+        elif key == "ON":
+            first_split = value.split("AND")
+            return value.split("=")
 
 
 def get_sql_instruction_example_A():
@@ -59,7 +66,17 @@ def get_sql_instruction_example_A():
 
 
 def get_sql_instruction_example_B():
-    return "SELECT NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE FROM "
+    return "SELECT NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE " \
+           "FROM USER " \
+           "JOIN ACCOUNT " \
+           "ON USER.USER_ID = ACCOUNT.FK_USER_ID " \
+           "WHERE OPENING_BALANCE >= 235 AND UF = 'CE' AND ZIP_CODE <> '62930000'"
+
+
+def get_split_example():
+    rat = RelationalAlgebraSplitter()
+    sql_instruction = get_sql_instruction_example_B()
+    return rat.split_pipeline(sql_instruction)
 
 
 def __main():
