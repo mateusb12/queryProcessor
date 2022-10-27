@@ -1,6 +1,6 @@
 import random
 
-from placeholder_generator.table_importer import random_table, mail_suffix
+from placeholder_generator.table_importer import random_table, mail_suffix, random_street_table
 
 
 def generate_random_integer(min_range: int, max_range: int):
@@ -16,6 +16,16 @@ def generate_random_first_name():
 def generate_random_last_name():
     """Create a random last name"""
     return random.choice(random_table["Last Name"])
+
+
+def generate_random_street_name():
+    """Create a random street name"""
+    return random.choice(random_street_table["Address"])
+
+
+def generate_random_house_number():
+    """Create a random house number"""
+    return random.choice(random_street_table["Postcode"])
 
 
 def generate_random_project_name(size: int):
@@ -74,7 +84,3 @@ def generate_random_telephone():
     elif second_tag < 10:
         second_tag = f"000{second_tag}"
     return f"+55 ({city_code}) 9{header}{first_tag}-{second_tag}"
-
-
-if __name__ == "__main__":
-    __main()
