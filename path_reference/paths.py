@@ -4,7 +4,7 @@ ref = Path(__file__).parent.parent
 
 
 def get_table_path():
-    return Path(ref, "placeholder_generator", "outputs")
+    return Path(ref, "placeholder_generator", "main_table")
 
 
 def __main():

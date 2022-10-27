@@ -28,7 +28,7 @@ class RelationalAlgebraProcessor:
             for column in table.columns:
                 first_value = str(table[column].iloc[0])
                 if re.match(r"\d{2}/\d{2}/\d{4}", first_value):
-                    table[column] = pd.to_datetime(table[column], format='%d/%m/%Y')
+                    table[column] = pd.to_datetime(table[column], format='%d/%m/%Y', dayfirst=True)
 
     def load_table(self, table_tag: str or pd.DataFrame) -> pd.DataFrame:
         if isinstance(table_tag, str):

@@ -1,5 +1,5 @@
 from queries.relational_algebra_processor import RelationalAlgebraProcessor
-from queries.relational_algebra_splitter import get_sql_instruction_example_A
+from queries.relational_algebra_splitter import get_sql_instruction_example_A, get_sql_instruction_example_C
 from queries.relational_algebra_wrapper import relational_algebra_wrapper
 from queryTree.node import Node
 
@@ -21,6 +21,7 @@ class Tree:
         self.root_node = first_node
         for instruction in self.expressions:
             new_label = self.increment_current_label()
+            print(f"Label: {new_label}")
             current_node.create_father(relational_instruction=instruction, label=new_label)
             old_content = current_node.content
             current_node = current_node.father
@@ -41,7 +42,7 @@ class Tree:
 
 
 def build_example_tree() -> Tree:
-    instruction_example = get_sql_instruction_example_A()
+    instruction_example = get_sql_instruction_example_C()
     relational_algebra_instructions = relational_algebra_wrapper(instruction_example)
     t = Tree(relational_algebra_instructions)
     t.build_tree()

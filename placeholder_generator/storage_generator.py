@@ -63,7 +63,7 @@ def generate_random_transaction_table_line():
 
 def create_user_table_csv(size: int = 10000):
     """Create a csv with random user entries"""
-    with open("outputs/user.csv", "w") as file:
+    with open("main_table/user.csv", "w") as file:
         file.write("USER_ID,NAME,ADDRESS,NUMBER,DISTRICT,ZIP_CODE,UF,BIRTHDATE\n")
         for _ in range(size):
             new_line = f"{generate_random_user_table_line()}\n"
@@ -73,7 +73,7 @@ def create_user_table_csv(size: int = 10000):
 
 def create_account_type_csv(size: int = 10000):
     """Create a csv with random account type entries"""
-    with open("outputs/account_type.csv", "w") as file:
+    with open("main_table/account_type.csv", "w") as file:
         file.write("ACCOUNT_TYPE_ID,ACCOUNT_TYPE_DESCRIPTION\n")
         for _ in range(size):
             file.write(f"{generate_random_account_type_table_line()}\n")
@@ -81,7 +81,7 @@ def create_account_type_csv(size: int = 10000):
 
 def create_account_csv(size: int = 10000):
     """Create a csv with random account entries"""
-    with open("outputs/account.csv", "w") as file:
+    with open("main_table/account.csv", "w") as file:
         file.write("ACCOUNT_ID,DESCRIPTION,FK_ACCOUNT_TYPE_ID,FK_USER_ID,OPENING_BALANCE\n")
         for _ in range(size):
             file.write(f"{generate_random_account_table_line()}\n")
@@ -89,7 +89,7 @@ def create_account_csv(size: int = 10000):
 
 def create_transaction_type_csv(size: int = 10000):
     """Create a csv with random transaction type entries"""
-    with open("outputs/transaction_type.csv", "w") as file:
+    with open("main_table/transaction_type.csv", "w") as file:
         file.write("TRANSACTION_TYPE_ID,TRANSACTION_TYPE_DESCRIPTION\n")
         for _ in range(size):
             file.write(f"{generate_random_transaction_type_table_line()}\n")
@@ -97,7 +97,7 @@ def create_transaction_type_csv(size: int = 10000):
 
 def create_category_csv(size: int = 10000):
     """Create a csv with random category entries"""
-    with open("outputs/category.csv", "w") as file:
+    with open("main_table/category.csv", "w") as file:
         file.write("CATEGORY_ID,CATEGORY_DESCRIPTION\n")
         for _ in range(size):
             file.write(f"{generate_random_category_table_line()}\n")
@@ -105,7 +105,7 @@ def create_category_csv(size: int = 10000):
 
 def create_transaction_csv(size: int = 10000):
     """Create a csv with random transaction entries"""
-    with open("outputs/transaction.csv", "w") as file:
+    with open("main_table/transaction.csv", "w") as file:
         file.write("TRANSACTION_ID,DATE,TRANSACTION_DESCRIPTION,"
                    "FK_TRANSACTION_TYPE_ID,FK_CATEGORY_ID,FK_ACCOUNT_ID,VALUE\n")
         for _ in range(size):
@@ -122,25 +122,29 @@ def recalculate_all_indexes():
 
 def recalculate_single_index(table_name: str, index_column: str):
     try:
-        table = pd.read_csv(f"outputs/{table_name}.csv")
+        table = pd.read_csv(f"main_table/{table_name}.csv")
     except FileNotFoundError:
         print(f"Table {table_name} not found")
         return
     size = len(table)
     table[index_column] = range(1, size + 1)
-    table.to_csv(f"outputs/{table_name}.csv", index=False)
+    table.to_csv(f"main_table/{table_name}.csv", index=False)
+
+
+def full_pipeline(size: int = 10000):
+    create_user_table_csv(size)
+    create_account_type_csv(size)
+    recalculate_all_indexes()
+    create_account_csv(size)
+    create_transaction_type_csv(size)
+    create_category_csv(size)
+    recalculate_all_indexes()
+    create_transaction_csv(size)
+    recalculate_all_indexes()
 
 
 def __main():
-    create_user_table_csv()
-    create_account_type_csv()
-    recalculate_all_indexes()
-    create_account_csv()
-    create_transaction_type_csv()
-    create_category_csv()
-    recalculate_all_indexes()
-    create_transaction_csv()
-    recalculate_all_indexes()
+    full_pipeline(1000)
 
 
 if __name__ == "__main__":

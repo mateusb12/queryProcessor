@@ -42,8 +42,9 @@ def generate_random_project_name(size: int):
 
 def generate_random_birthdate():
     """Create a random birthdate. The person should have between 18 and 45 years old"""
-    day = generate_random_integer(1, 30)
     month = generate_random_integer(1, 12)
+    max_days = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
+    day = generate_random_integer(1, max_days[month])
     random_day = day if day > 9 else f"0{day}"
     random_month = month if month > 9 else f"0{month}"
     random_year = generate_random_integer(1977, 2004)
