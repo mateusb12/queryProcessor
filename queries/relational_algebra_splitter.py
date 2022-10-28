@@ -127,7 +127,7 @@ def get_sql_instruction_example_C():
            "ON USER.USER_ID = ACCOUNT.FK_USER_ID " \
            "JOIN ACCOUNT_TYPE " \
            "ON ACCOUNT_TYPE.ACCOUT_TYPE_ID = ACCOUNT.FK_ACCOUNT_TYPE_ID " \
-           "WHERE OPENING_BALANCE >= 300 AND UF = 'CE' AND ACCOUNT_DESCRIPTION <> 'Conta Corrente' AND USER_ID > 3"
+           "WHERE OPENING_BALANCE >= 300 AND UF = 'CE' AND DESCRIPTION <> 'Conta Corrente' AND USER_ID > 70"
 
 
 def get_split_example():

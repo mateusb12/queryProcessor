@@ -113,6 +113,12 @@ class RelationalAlgebraProcessor:
             return original_table[original_table[column] > adjusted_right_value]
         elif operator == "<":
             return original_table[original_table[column] < adjusted_right_value]
+        elif operator == ">=":
+            return original_table[original_table[column] >= adjusted_right_value]
+        elif operator == "<=":
+            return original_table[original_table[column] <= adjusted_right_value]
+        elif operator == "<>":
+            return original_table[original_table[column] != adjusted_right_value]
 
     def normalize_values(self, value, column_type):
         value_array = np.array(value)
@@ -121,7 +127,7 @@ class RelationalAlgebraProcessor:
         if not different_types:
             return value
         new_array = self.numpy_type_conversion(value_array, column_type)
-        return new_array.max()
+        return new_array
 
     @staticmethod
     def numpy_type_conversion(array_value, column_type):

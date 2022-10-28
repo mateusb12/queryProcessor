@@ -13,13 +13,13 @@ class Tree:
         self.edge_pot = []
 
     def build_tree(self):
-        first_expression = self.expressions.pop(0)
+        first_expression = self.expressions[0]
         first_node = Node(first_expression, self.processor, self.current_label)
         first_node.analyze_node_instruction()
         self.edge_pot.append(first_node.edges)
         current_node = first_node
         self.root_node = first_node
-        for instruction in self.expressions:
+        for instruction in self.expressions[1:]:
             new_label = self.increment_current_label()
             print(f"Label: {new_label}")
             current_node.create_father(relational_instruction=instruction, label=new_label)
