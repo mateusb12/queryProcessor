@@ -135,7 +135,7 @@ def get_sql_instruction_example_D():
            "FROM USER " \
            "JOIN ACCOUNT " \
            "ON USER.USER_ID = ACCOUNT.FK_USER_ID " \
-           "WHERE OPENING_BALANCE >= 235 AND UF = 'CE' AND ZIP_CODE <> '44998-830' "
+           "WHERE OPENING_BALANCE >= 235 AND UF = 'CE' AND ZIP_CODE <> '23522-883' "
 
 
 def get_split_example():

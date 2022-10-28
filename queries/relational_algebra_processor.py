@@ -161,10 +161,14 @@ class RelationalAlgebraProcessor:
             new_array_value = array_value.astype(str)
         return new_array_value
 
+    def export_all_columns(self) -> dict:
+        return {key: list(value.columns) for key, value in self.tables.items()}
+
 
 def __main():
     qt = RelationalAlgebraProcessor()
-    aux = qt.set_up_query_example()
+    qt.export_all_columns()
+    # aux = qt.set_up_query_example()
     return
 
 

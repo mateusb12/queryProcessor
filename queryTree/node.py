@@ -26,15 +26,19 @@ class Node:
         If the instruction follows the format word1 ⨯ word2, then the operation is cartesian product
          and the tables are word1 and word2"""
         cartesian_match = re.search(r"(\w+) ⨯ (\w+)", self.relational_instruction)
-        selection_match = re.search(r"σ\[(\w+)([<>=!]+)([\'\w]+)", self.relational_instruction)
+        selection_match = re.search(r"σ\[(\w+)([<>=!]+)((.*)\])", self.relational_instruction)
         projection_match = re.search(r"π\[(\w+)", self.relational_instruction)
         join_match = re.search(r"(\w+) ⋈ •(.*)• (\w+)", self.relational_instruction)
         if cartesian_match:
             table_a, table_b = cartesian_match.groups()
             self.cartesian_operation(table_a, table_b)
         if selection_match:
-            column, operator, value = selection_match.groups()
-            self.selection_operation(column, operator, value)
+            table = ""
+            column, operator, trash, value = selection_match.groups()
+            if "•" in self.relational_instruction:
+                table_match = re.search(r"•(.*)•", self.relational_instruction)
+                table = table_match.group(1)
+            self.selection_operation(column, operator, value, desired_table=table)
         if projection_match:
             column = projection_match.groups()[0]
             self.projection_operation(column)
@@ -50,12 +54,13 @@ class Node:
         self.content = new_content
         self.size = len(self.content)
 
-    def selection_operation(self, column: str, operator: str, value: str):
+    def selection_operation(self, column: str, operator: str, value: str, desired_table: str = ""):
         if '' in column:
             column = column.replace("'", "")
         if '' in value:
             value = value.replace("'", "")
-        new_content = self.processor.selection(self.content, column, operator, value)
+        chosen_content = self.processor.load_table(desired_table.lower()) if desired_table else self.content
+        new_content = self.processor.selection(chosen_content, column, operator, value)
         self.content = new_content
         self.size = len(self.content)
 
