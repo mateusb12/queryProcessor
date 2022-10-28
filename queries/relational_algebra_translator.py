@@ -12,7 +12,9 @@ class RelationalAlgebraTranslator:
         projection = self.__extract_projection()
         selection = self.__extract_selection()
         cartesian_product = self.__extract_cartesian_product()
-        return f"{projection}({selection}({cartesian_product}))"
+        on_values = self.__extract_on()
+        merged_selection = f"({selection} ^ {on_values})" if on_values else selection
+        return f"{projection}({merged_selection}({cartesian_product}))"
 
     def __extract_projection(self):
         return ["π[" + ", ".join(self.split_sql["SELECT"]) + "]"][0]
@@ -43,6 +45,14 @@ class RelationalAlgebraTranslator:
         def cartesian_join(x, y): return f"({x} ⨯ {y})"
 
         return reduce(cartesian_join, full_values)
+
+    def __extract_on(self):
+        on_values = self.split_sql["ON"]
+        on_pot = []
+        for value in on_values:
+            new_instruction = f"σ[{value[0]}{value[1]}{value[2]}]"
+            on_pot.append(new_instruction)
+        return on_pot[0] if len(on_pot) == 1 else " ^ ".join(on_pot)
 
 
 def __main():

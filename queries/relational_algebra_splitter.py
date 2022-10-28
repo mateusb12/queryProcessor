@@ -95,7 +95,7 @@ class RelationalAlgebraSplitter:
                 structured_sql[index] = f"JOIN_{chr(current_index + 64)}"
             elif item == "ON":
                 structured_sql[index] = f"ON_{chr(current_index + 64)}"
-        for replace_index, _ in enumerate(range(1, join_amount+1)):
+        for replace_index, _ in enumerate(range(1, join_amount + 1)):
             join_position = self.sql.find(" JOIN ") + 5
             struct_sql = list(self.sql)
             struct_sql.insert(join_position, f"_{chr(replace_index + 65)}")
@@ -130,9 +130,17 @@ def get_sql_instruction_example_C():
            "WHERE OPENING_BALANCE >= 300 AND UF = 'CE' AND DESCRIPTION <> 'Conta Corrente' AND USER_ID > 70"
 
 
+def get_sql_instruction_example_D():
+    return "SELECT NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE " \
+           "FROM USER " \
+           "JOIN ACCOUNT " \
+           "ON USER.USER_ID = ACCOUNT.FK_USER_ID " \
+           "WHERE OPENING_BALANCE >= 235 AND UF = 'CE' AND ZIP_CODE <> '44998-830' "
+
+
 def get_split_example():
     rat = RelationalAlgebraSplitter()
-    sql_instruction = get_sql_instruction_example_C()
+    sql_instruction = get_sql_instruction_example_D()
     return rat.split_pipeline(sql_instruction)
 
 
