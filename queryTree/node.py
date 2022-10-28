@@ -28,6 +28,7 @@ class Node:
         cartesian_match = re.search(r"(\w+) ⨯ (\w+)", self.relational_instruction)
         selection_match = re.search(r"σ\[(\w+)([<>=!]+)([\'\w]+)", self.relational_instruction)
         projection_match = re.search(r"π\[(\w+)", self.relational_instruction)
+        join_match = re.search(r"(\w+) ⋈ •(.*)• (\w+)", self.relational_instruction)
         if cartesian_match:
             table_a, table_b = cartesian_match.groups()
             self.cartesian_operation(table_a, table_b)
@@ -37,6 +38,11 @@ class Node:
         if projection_match:
             column = projection_match.groups()[0]
             self.projection_operation(column)
+        if join_match:
+            table_a, restriction, table_b = join_match.groups()
+            restriction_match = re.search(r"(\w+)\.(.*)([<>=!]+)(\w+)\.(.*)", restriction)
+            left_table, left_column, operator, right_table, right_column = restriction_match.groups()
+            self.join_operation(table_a, table_b, left_column, right_column)
         self.edges = self.get_edge_list()
 
     def projection_operation(self, column: str):
@@ -59,7 +65,7 @@ class Node:
         if self.right_children is not None:
             return self.right_children.content
 
-    def cartesian_operation(self, table_a: str, table_b: str):
+    def merge_preparation(self, table_a, table_b):
         if self.left_children is None and table_a != "SELF":
             new_table_a = self.processor.load_table(table_a)
             self.create_left_children(content=new_table_a)
@@ -68,10 +74,20 @@ class Node:
             self.create_right_children(content=new_table_b)
         left_content = self.left_children.content if table_a != "SELF" else self.get_self_content()
         right_content = self.right_children.content if table_b != "SELF" else self.get_self_content()
+        return left_content, right_content
+
+    def cartesian_operation(self, table_a: str, table_b: str):
+        left_content, right_content = self.merge_preparation(table_a, table_b)
         new_content = self.processor.cartesian_product(left_content, right_content)
         self.content = new_content
         self.size = len(self.content)
         self.relational_instruction = "SELF"
+
+    def join_operation(self, table_a: str, table_b: str, column_a: str, column_b: str):
+        left_content, right_content = self.merge_preparation(table_a, table_b)
+        new_content = self.processor.join(left_content, right_content, column_a, column_b)
+        self.content = new_content
+        self.size = len(self.content)
 
     def create_new_children(self, content: pd.DataFrame, label: str = "A"):
         new_node = Node(input_processor=self.processor, input_label=label)

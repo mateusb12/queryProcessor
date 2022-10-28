@@ -49,16 +49,19 @@ class RelationalAlgebraProcessor:
         original_table_b = self.load_table(table_b)
         return pd.merge(original_table_a, original_table_b, how="cross")
 
-    def join(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame, column_a: str, column_b: str) -> pd.DataFrame or str:
+    def join(self, table_a: str or pd.DataFrame, table_b: str or pd.DataFrame, column_a: str, column_b: str)\
+            -> pd.DataFrame or str:
+        # sourcery skip: use-named-expression
         """Returns a table with all columns from both tables. Both tables should be compatible"""
         original_table_a = self.load_table(table_a)
         original_table_b = self.load_table(table_b)
-        if compatible_test := self.check_compatible_junction(table_a, table_b):
-            if column_a not in original_table_a.columns:
-                raise ValueError(f"Column {column_a} does not exist in table {table_a}")
-            if column_b not in original_table_b.columns:
-                raise ValueError(f"Column {column_b} does not exist in table {table_b}")
-            return pd.merge(original_table_a, original_table_b, how="inner", left_on=column_a, right_on=column_b)
+        # compatible_test = self.check_compatible_junction(original_table_a, original_table_b)
+        # if compatible_test:
+        if column_a not in original_table_a.columns:
+            raise ValueError(f"Column {column_a} does not exist in table {table_a}")
+        if column_b not in original_table_b.columns:
+            raise ValueError(f"Column {column_b} does not exist in table {table_b}")
+        return pd.merge(original_table_a, original_table_b, how="inner", left_on=column_a, right_on=column_b)
 
     @staticmethod
     def check_compatible_junction(table_a: pd.DataFrame, table_b: pd.DataFrame) -> bool:

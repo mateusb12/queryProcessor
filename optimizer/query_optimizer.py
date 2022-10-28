@@ -12,6 +12,7 @@ class QueryOptimizer:
         self.__analyze_instructions()
         if "cross_product" in self.instruction_dict.keys():
             self.avoid_cross_product()
+        return self.instructions
 
     def __analyze_instructions(self):
         for item in self.instructions:
@@ -29,9 +30,10 @@ class QueryOptimizer:
                 raw_condition = instruction.split(existing_operator)
                 left_condition, right_condition = [item.replace("σ[", "").replace("]", "") for item in raw_condition]
                 removed_instruction = instruction
-                new_instruction = f"({table_a} |X| •{left_condition}{existing_operator}{right_condition}• {table_b})"
+                new_instruction = f"({table_a} ⋈ •{left_condition}{existing_operator}{right_condition}• {table_b})"
                 break
-        self.instructions.remove(removed_instruction)
+        if removed_instruction in self.instructions:
+            self.instructions.remove(removed_instruction)
         for index, instruction in enumerate(self.instructions):
             if instruction == main_value:
                 self.instructions[index] = new_instruction
@@ -39,10 +41,15 @@ class QueryOptimizer:
         return
 
 
-def __main():
+def get_optimized_example() -> list[str]:
     instruction_example = get_sql_instruction_example_D()
     instruction_set = relational_algebra_wrapper(instruction_example)
     qo = QueryOptimizer(instruction_set)
+    return qo.optimizer_pipeline()
+
+
+def __main():
+    aux = get_optimized_example()
     return
 
 

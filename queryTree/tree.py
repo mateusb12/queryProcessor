@@ -1,5 +1,7 @@
+from optimizer.query_optimizer import get_optimized_example
 from queries.relational_algebra_processor import RelationalAlgebraProcessor
-from queries.relational_algebra_splitter import get_sql_instruction_example_A, get_sql_instruction_example_C
+from queries.relational_algebra_splitter import get_sql_instruction_example_A, get_sql_instruction_example_C, \
+    get_sql_instruction_example_D
 from queries.relational_algebra_wrapper import relational_algebra_wrapper
 from queryTree.node import Node
 
@@ -42,8 +44,9 @@ class Tree:
 
 
 def build_example_tree() -> Tree:
-    instruction_example = get_sql_instruction_example_C()
-    relational_algebra_instructions = relational_algebra_wrapper(instruction_example)
+    # instruction_example = get_sql_instruction_example_D()
+    # relational_algebra_instructions = relational_algebra_wrapper(instruction_example)
+    relational_algebra_instructions = get_optimized_example()
     t = Tree(relational_algebra_instructions)
     t.build_tree()
     return t
