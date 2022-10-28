@@ -124,10 +124,7 @@ class RelationalAlgebraProcessor:
         value_array = np.array(value)
         value_type = value_array.dtype
         different_types = value_type != column_type
-        if not different_types:
-            return value
-        new_array = self.numpy_type_conversion(value_array, column_type)
-        return new_array
+        return self.numpy_type_conversion(value_array, column_type) if different_types else value
 
     @staticmethod
     def numpy_type_conversion(array_value, column_type):
