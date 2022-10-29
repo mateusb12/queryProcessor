@@ -140,7 +140,7 @@ def get_sql_instruction_example_D():
 
 def get_split_example():
     rat = RelationalAlgebraSplitter()
-    sql_instruction = get_sql_instruction_example_D()
+    sql_instruction = get_sql_instruction_example_C()
     return rat.split_pipeline(sql_instruction)
 
 

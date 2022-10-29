@@ -19,18 +19,29 @@ class QueryOptimizer:
     def optimizer_pipeline(self):
         self.__analyze_instructions()
         if "cross_product" in self.instruction_dict.keys():
-            self.heuristic_avoid_cross_product()
-        self.heuristic_reduce_tuples()
-        self.heuristic_attribute_reduce()
+            for cross_product in self.instruction_dict["cross_product"]:
+                self.single_path_pipeline(cross_product)
         return self.instructions
 
     def __analyze_instructions(self):
         for item in self.instructions:
             if "⨯" in item:
-                self.instruction_dict["cross_product"] = item
+                if "cross_product" not in self.instruction_dict:
+                    self.instruction_dict["cross_product"] = [item]
+                else:
+                    self.instruction_dict["cross_product"].append(item)
+        self.instruction_dict["cross_product"] = reversed(self.instruction_dict["cross_product"])
 
-    def heuristic_avoid_cross_product(self):
-        main_value = self.instruction_dict["cross_product"]
+    def single_path_pipeline(self, input_cross_product: str):
+        self.heuristic_avoid_cross_product(input_cross_product)
+        self.heuristic_reduce_tuples()
+        self.heuristic_attribute_reduce()
+        return
+
+    def heuristic_avoid_cross_product(self, main_value: str):
+        """ This heuristic is used to avoid cross product operations, in order to reduce the number of tuples.
+        It merges 1 selection operation with 1 cross product operation in order to create 1 join operation."""
+        # main_value = self.instruction_dict["cross_product"]
         table_a, table_b = [item.replace(" ", "") for item in main_value.split("⨯")]
         removed_instruction, new_instruction = "", ""
         for instruction in self.instructions:
@@ -66,9 +77,10 @@ class QueryOptimizer:
         suitable_selections = []
         for selection in selection_pot:
             selection_match = re.match(r"σ\[(\w+)([<>=!]+)(.*)\]", selection)
-            column, operator, value = selection_match.groups()
-            if column in column_pot:
-                suitable_selections.append(selection)
+            if selection_match is not None:
+                column, operator, value = selection_match.groups()
+                if column in column_pot:
+                    suitable_selections.append(selection)
         return suitable_selections
 
     def __rename_selection_instructions(self, left_table, right_table, selection_pot):
@@ -110,6 +122,8 @@ class QueryOptimizer:
         return
 
     def heuristic_reduce_tuples(self):
+        """ This heuristic is used to reduce the number of tuples by altering selection positions.
+        It basically moves selection operations closer to the bottom of the query plan."""
         join_instructions = self.__get_join_instructions()
         if not join_instructions:
             return
@@ -123,6 +137,8 @@ class QueryOptimizer:
         return
 
     def heuristic_attribute_reduce(self):
+        """ This heuristic is used to reduce the number of attributes by altering projection positions.
+        It basically moves projection operations closer to the bottom of the query plan."""
         column_pot = []
         column_pot.extend(self.used_join_columns)
         projection_instructions = [item for item in self.instructions if "π" in item]
@@ -131,20 +147,57 @@ class QueryOptimizer:
             columns = projection_match.groups()[0].split(",")
             trimmed_columns = [item.replace(" ", "") for item in columns]
             column_pot.extend(trimmed_columns)
-        left_table_columns = self.column_dict[self.left_table.lower()]
-        right_table_columns = self.column_dict[self.right_table.lower()]
-        left_table_projection = [item for item in left_table_columns if item in column_pot]
-        right_table_projection = [item for item in right_table_columns if item in column_pot]
+        left_table_projection_columns = [item for item in self.left_table_columns if item in column_pot]
+        right_table_projection_columns = [item for item in self.right_table_columns if item in column_pot]
+        left_table_projection = f"π[{','.join(left_table_projection_columns)}]"
+        right_table_projection = f"π[{','.join(right_table_projection_columns)}]"
+        self.__side_projection_insertion(table_name=self.left_table, projection=left_table_projection)
+        self.__side_projection_insertion(table_name=self.right_table, projection=right_table_projection)
         return
 
+    def __side_projection_insertion(self, table_name: str, projection: str):
+        reversed_list = list(reversed(self.instructions))
+        for index, item in enumerate(reversed_list):
+            if "•" in item and "σ" in item and table_name in item:
+                desired_index = index + 1
+                while test := "•" not in reversed_list[desired_index] and "σ" in reversed_list[desired_index]:
+                    desired_index += 1
+                reversed_list.insert(desired_index, projection)
+                self.instructions = list(reversed(reversed_list))
+                return
 
-def get_optimized_example() -> list[str]:
+    def export_query_plan_in_tree_format(self) -> dict:
+        """This function exports the query plan in a tree format, composed by main path, left path and right path."""
+        main_path = []
+        left_path = []
+        right_path = []
+        for index, item in enumerate(self.instructions):
+            if "full" not in main_path:
+                main_path.append(item)
+                if "⋈" in item:
+                    main_path.append("full")
+                continue
+            if "full" not in left_path:
+                left_path.append(item)
+                if "•" in item:
+                    left_path.append("full")
+                continue
+            if "full" not in right_path:
+                right_path.append(item)
+                if "•" in item:
+                    right_path.append("full")
+                continue
+        return {"left_path": left_path[:-1], "right_path": right_path[:-1], "main_path": main_path[:-1]}
+
+
+def get_optimized_example() -> dict:
     qt = RelationalAlgebraProcessor()
     column_dict = qt.export_all_columns()
     instruction_example = get_sql_instruction_example_D()
     instruction_set = relational_algebra_wrapper(instruction_example)
     qo = QueryOptimizer(instruction_set, column_dict)
-    return qo.optimizer_pipeline()
+    qo.optimizer_pipeline()
+    return qo.export_query_plan_in_tree_format()
 
 
 def __main():

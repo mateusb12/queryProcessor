@@ -47,10 +47,13 @@ class RelationalAlgebraTranslator:
         return reduce(cartesian_join, full_values)
 
     def __extract_on(self):
-        on_values = self.split_sql["ON"]
+        if "ON_A" in self.split_sql:
+            on_values = [value[0] for key, value in self.split_sql.items() if key.startswith("ON")]
+        else:
+            on_values = self.split_sql["ON"]
         on_pot = []
-        for value in on_values:
-            new_instruction = f"σ[{value[0]}{value[1]}{value[2]}]"
+        for instruction in on_values:
+            new_instruction = f"σ[{instruction[0]}{instruction[1]}{instruction[2]}]"
             on_pot.append(new_instruction)
         return on_pot[0] if len(on_pot) == 1 else " ^ ".join(on_pot)
 
