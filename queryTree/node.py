@@ -35,9 +35,11 @@ class Node:
         if selection_match:
             table = ""
             column, operator, trash, value = selection_match.groups()
-            if "•" in self.relational_instruction:
+            table_tag = "•" in self.relational_instruction
+            if table_tag:
                 table_match = re.search(r"•(.*)•", self.relational_instruction)
                 table = table_match.group(1)
+            multiple_selection = " ∧ " in self.relational_instruction
             self.selection_operation(column, operator, value, desired_table=table)
         if projection_match:
             column = projection_match.groups()[0]
@@ -59,7 +61,10 @@ class Node:
             column = column.replace("'", "")
         if '' in value:
             value = value.replace("'", "")
-        chosen_content = self.processor.load_table(desired_table.lower()) if desired_table else self.content
+        if self.left_children is None and self.right_children is None:
+            chosen_content = self.processor.load_table(desired_table.lower())
+        else:
+            chosen_content = self.content
         new_content = self.processor.selection(chosen_content, column, operator, value)
         self.content = new_content
         self.size = len(self.content)

@@ -10,12 +10,18 @@ class QueryOptimizer:
         self.instructions = instruction_list
         self.column_dict = column_dict
         self.instruction_dict = {}
+        self.used_join_columns = []
+        self.left_table = ""
+        self.right_table = ""
+        self.left_table_columns = []
+        self.right_table_columns = []
 
     def optimizer_pipeline(self):
         self.__analyze_instructions()
         if "cross_product" in self.instruction_dict.keys():
-            self.avoid_cross_product()
-        self.reduce_tuples()
+            self.heuristic_avoid_cross_product()
+        self.heuristic_reduce_tuples()
+        self.heuristic_attribute_reduce()
         return self.instructions
 
     def __analyze_instructions(self):
@@ -23,7 +29,7 @@ class QueryOptimizer:
             if "⨯" in item:
                 self.instruction_dict["cross_product"] = item
 
-    def avoid_cross_product(self):
+    def heuristic_avoid_cross_product(self):
         main_value = self.instruction_dict["cross_product"]
         table_a, table_b = [item.replace(" ", "") for item in main_value.split("⨯")]
         removed_instruction, new_instruction = "", ""
@@ -33,6 +39,10 @@ class QueryOptimizer:
                 existing_operator = [operator for operator in operators if operator in instruction][0]
                 raw_condition = instruction.split(existing_operator)
                 left_condition, right_condition = [item.replace("σ[", "").replace("]", "") for item in raw_condition]
+                self.used_join_columns.append(left_condition.split(".")[-1])
+                self.used_join_columns.append(right_condition.split(".")[-1])
+                self.left_table = left_condition.split(".")[0]
+                self.right_table = right_condition.split(".")[0]
                 removed_instruction = instruction
                 new_instruction = f"({table_a} ⋈ •{left_condition}{existing_operator}{right_condition}• {table_b})"
                 break
@@ -42,6 +52,8 @@ class QueryOptimizer:
             if instruction == main_value:
                 self.instructions[index] = new_instruction
                 break
+        self.left_table_columns = self.column_dict[self.left_table.lower()]
+        self.right_table_columns = self.column_dict[self.right_table.lower()]
         return
 
     def __get_join_instructions(self):
@@ -79,23 +91,25 @@ class QueryOptimizer:
             index = self.instructions.index(selection)
             self.instructions.append(self.instructions.pop(index))
 
-    def __merge_common_selections(self):
+    def __handle_multiple_selections_of_the_same_table(self):
         selection_dict = {}
-        for instruction in self.instructions:
-            if selection_match := re.match(r"σ\[(\w+)([<>=!]+)(.*)\]•(\w+)•", instruction):
-                column, operator, value, table = selection_match.groups()
-                if table not in selection_dict.keys():
-                    selection_dict[table] = []
-                selection_dict[table].append(f"σ[{column}{operator}{value}]")
-        for key, value in selection_dict.items():
+        for item in self.instructions:
+            if "•" in item and "σ" in item:
+                table = item.split("•")[1]
+                if table in selection_dict:
+                    selection_dict[table].append(item)
+                else:
+                    selection_dict[table] = [item]
+        for value in selection_dict.values():
             if len(value) > 1:
-                new_selection = " ∧ ".join(value)
-                for item in value:
-                    if f"{item}•{key}•" in self.instructions:
-                        self.instructions.remove(f"{item}•{key}•")
-                self.instructions.append(f"({new_selection})•{key}•")
+                to_be_trimmed_pot = value[:-1]
+                for to_be_trimmed in to_be_trimmed_pot:
+                    index = self.instructions.index(to_be_trimmed)
+                    trimmed = to_be_trimmed.split("•")[0]
+                    self.instructions[index] = trimmed
+        return
 
-    def reduce_tuples(self):
+    def heuristic_reduce_tuples(self):
         join_instructions = self.__get_join_instructions()
         if not join_instructions:
             return
@@ -103,9 +117,24 @@ class QueryOptimizer:
         current_instruction = join_instructions[0]
         join_match = re.match(r"\((\w+) ⋈ •(.*)• (\w+)\)", current_instruction)
         left_table, restriction, right_table = join_match.groups()
-        self.__reorder_selections()
         self.__rename_selection_instructions(left_table, right_table, selection_pot)
-        self.__merge_common_selections()
+        self.__reorder_selections()
+        self.__handle_multiple_selections_of_the_same_table()
+        return
+
+    def heuristic_attribute_reduce(self):
+        column_pot = []
+        column_pot.extend(self.used_join_columns)
+        projection_instructions = [item for item in self.instructions if "π" in item]
+        for projection in projection_instructions:
+            projection_match = re.match(r"π\[(.*)\]", projection)
+            columns = projection_match.groups()[0].split(",")
+            trimmed_columns = [item.replace(" ", "") for item in columns]
+            column_pot.extend(trimmed_columns)
+        left_table_columns = self.column_dict[self.left_table.lower()]
+        right_table_columns = self.column_dict[self.right_table.lower()]
+        left_table_projection = [item for item in left_table_columns if item in column_pot]
+        right_table_projection = [item for item in right_table_columns if item in column_pot]
         return
 
 
