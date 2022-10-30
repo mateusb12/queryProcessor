@@ -117,19 +117,27 @@ class QueryOptimizer:
     def heuristic_attribute_reduce(self):
         """ This heuristic is used to reduce the number of attributes by altering projection positions.
         It basically moves projection operations closer to the bottom of the query plan."""
-        # first_table = self.instructions[-1].split("•")[1].lower()
-        # first_table_desirable_columns = self.__get_desirable_columns(first_table)
         desirable_dict = {key: self.__get_desirable_columns(key.lower()) for key in self.used_tables}
         for key, value in desirable_dict.items():
             if len(value) == 0:
                 continue
             new_instruction = f"π[{','.join(value)}]•{key}•"
+            found = False
             for index, item in enumerate(self.instructions):
                 if "σ" in item:
                     table_name = item.split("•")[1]
                     if table_name == key:
                         self.instructions.insert(index, new_instruction)
+                        found = True
                         break
+            if not found:
+                for index_, item_ in enumerate(self.instructions):
+                    if regex_join_match := re.match(r"\((\w+) ⋈ •(\w+)=(\w+)• (\w+)\)", item_):
+                        left_table, left_column, right_column, right_table = regex_join_match.groups()
+                        if key in [left_table, right_table]:
+                            self.instructions.insert(index_+1, new_instruction)
+                            found = True
+                            break
         return
 
     def export_query_plan_in_tree_format(self) -> dict:

@@ -121,7 +121,7 @@ def get_sql_instruction_example_B():
 
 
 def get_sql_instruction_example_C():
-    return "SELECT USER_ID, NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE, UF, ACCOUNT_DESCRIPTION " \
+    return "SELECT USER_ID, NAME, BIRTHDATE, DESCRIPTION, OPENING_BALANCE, UF, ACCOUNT_TYPE_DESCRIPTION " \
            "FROM USER " \
            "JOIN ACCOUNT " \
            "ON USER.USER_ID = ACCOUNT.FK_USER_ID " \
