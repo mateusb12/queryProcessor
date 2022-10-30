@@ -11,7 +11,7 @@ class Tree:
         self.expressions = relational_algebra_expressions[::-1]
         self.processor = RelationalAlgebraProcessor()
         self.root_node = None
-        self.current_label = "C"
+        self.current_label = "B"
         self.edge_pot = []
 
     def build_tree(self):
@@ -21,15 +21,18 @@ class Tree:
         self.edge_pot.append(first_node.edges)
         current_node = first_node
         self.root_node = first_node
+        tree_dict = {}
         for instruction in self.expressions[1:]:
             new_label = self.increment_current_label()
             print(f"Label: {new_label}")
             current_node.create_father(relational_instruction=instruction, label=new_label)
+            old_table = current_node.current_table
             old_content = current_node.content
             current_node = current_node.father
             current_node.analyze_node_instruction()
             self.edge_pot.append(current_node.edges)
             new_content = current_node.content
+            new_table = current_node.current_table
         self.unnest_edge_list()
 
     def increment_current_label(self):

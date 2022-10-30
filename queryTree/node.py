@@ -19,6 +19,7 @@ class Node:
         self.size = len(self.content)
         self.label = input_label
         self.edges = None
+        self.current_table = None
 
     def analyze_node_instruction(self):
         # sourcery skip: use-getitem-for-re-match-groups, use-named-expression
@@ -26,43 +27,43 @@ class Node:
         If the instruction follows the format word1 ⨯ word2, then the operation is cartesian product
          and the tables are word1 and word2"""
         cartesian_match = re.search(r"(\w+) ⨯ (\w+)", self.relational_instruction)
-        selection_match = re.search(r"σ\[(\w+)([<>=!]+)((.*)\])", self.relational_instruction)
-        projection_match = re.search(r"π\[(\w+)", self.relational_instruction)
+        selection_match = re.search(r"σ\[(\w+)([<>=!]+)(.*)(?:\]\•)(\w+)(?:\•)", self.relational_instruction)
+        projection_match = re.search(r"π\[((.*))\](?:\•(\w+))?", self.relational_instruction)
+        # projection_match = re.search(r"π\[(\w+)", self.relational_instruction)
         join_match = re.search(r"(\w+) ⋈ •(.*)• (\w+)", self.relational_instruction)
         if cartesian_match:
             table_a, table_b = cartesian_match.groups()
             self.cartesian_operation(table_a, table_b)
-        if selection_match:
-            table = ""
-            column, operator, trash, value = selection_match.groups()
-            table_tag = "•" in self.relational_instruction
-            if table_tag:
-                table_match = re.search(r"•(.*)•", self.relational_instruction)
-                table = table_match.group(1)
-            multiple_selection = " ∧ " in self.relational_instruction
+        elif selection_match:
+            column, operator, value, table = selection_match.groups()
+            self.current_table = table
             self.selection_operation(column, operator, value, desired_table=table)
-        if projection_match:
-            column = projection_match.groups()[0]
-            self.projection_operation(column)
-        if join_match:
+        elif projection_match:
+            projection_groups = projection_match.groups()
+            column_list = projection_groups[0].split(",")
+            if len(projection_groups) == 3:
+                self.current_table = projection_groups[2]
+            self.projection_operation(column_list)
+        elif join_match:
             table_a, restriction, table_b = join_match.groups()
             restriction_match = re.search(r"(\w+)\.(.*)([<>=!]+)(\w+)\.(.*)", restriction)
             left_table, left_column, operator, right_table, right_column = restriction_match.groups()
             self.join_operation(table_a, table_b, left_column, right_column)
         self.edges = self.get_edge_list()
 
-    def projection_operation(self, column: str):
-        new_content = self.processor.projection(self.content, [column])
+    def projection_operation(self, column_list: list[str]):
+        new_content = self.processor.projection(self.content, column_list)
         self.content = new_content
         self.size = len(self.content)
 
     def selection_operation(self, column: str, operator: str, value: str, desired_table: str = ""):
-        if '' in column:
+        if "'" in column:
             column = column.replace("'", "")
-        if '' in value:
+        if "'" in value:
             value = value.replace("'", "")
         if self.left_children is None and self.right_children is None:
             chosen_content = self.processor.load_table(desired_table.lower())
+            self.create_left_children(chosen_content)
         else:
             chosen_content = self.content
         new_content = self.processor.selection(chosen_content, column, operator, value)
@@ -124,6 +125,9 @@ class Node:
         self.father.right_children = self.sibling
 
     def get_edge_list(self):
+        if self.right_children is None:
+            alternative_label = chr(ord(self.label) - 1)
+            self.left_children.label = alternative_label
         left_children_label = self.left_children.label if self.left_children else None
         right_children_label = self.right_children.label if self.right_children else None
         left_edge = [self.label, left_children_label] if left_children_label else None
