@@ -140,29 +140,35 @@ class QueryOptimizer:
                             break
         return
 
-    def export_query_plan_in_tree_format(self) -> dict:
-        """This function exports the query plan in a tree format, composed by main path, left path and right path."""
-        main_path = []
-        left_path = []
-        right_path = []
-        for index, item in enumerate(self.instructions):
-            if "full" not in main_path:
-                main_path.append(item)
-                if "⋈" in item:
-                    main_path.append("full")
-                continue
-            if "full" not in left_path:
-                left_path.append(item)
-                if "•" in item:
-                    left_path.append("full")
-                continue
-            if "full" not in right_path:
-                right_path.append(item)
-                if "•" in item:
-                    right_path.append("full")
-                continue
-        return {"left_path": left_path[:-1], "right_path": right_path[:-1], "main_path": main_path[:-1]}
+    # def fix_query(self):
+    #     for index, item in enumerate(self.instructions):
+    #         if defective_regex := re.match(r"(?:.*)\•(\w+)\•(\•\w+\•)", item):
+    #             normal, error = defective_regex.groups()
+    #             error_size = len(error)
+    #             fixed_string = item[:-error_size]
+    #             self.instructions[index] = fixed_string
+    #     return
 
+    def export_query_plan_in_tree_format(self) -> dict:
+        join_instructions_column_dict, join_instructions_index_dict = self.__join_side_analysis()
+        query_dict = {0: self.instructions[0]}
+        for index, item in enumerate(self.instructions):
+            if index == 0:
+                continue
+            last_item = self.instructions[index+1]
+            join_regex = re.match(r"\((\w+) ⋈ •(\w+)=(\w+)• (\w+)\)", item)
+            selection_regex = re.match(r"σ\[(\w+)([<>=!]+)(.*)\](?:\•(\w+)\•)?", item)
+            projection_regex = re.match(r"π\[(.*)\](?:\•(\w+)\•)?", item)
+            if join_regex:
+                left_table, left_column, right_column, right_table = join_regex.groups()
+                left_join_size = len(join_instructions_column_dict[left_table])
+                right_join_size = len(join_instructions_column_dict[right_table])
+                left_table_index = join_instructions_index_dict[left_table]
+                right_table_index = join_instructions_index_dict[right_table]
+                query_dict[left_table_index] = left_table
+                query_dict[right_table_index] = right_table
+                query_dict[index] = item
+            continue
 
 def get_optimized_example() -> list[str]:
     qt = RelationalAlgebraProcessor()

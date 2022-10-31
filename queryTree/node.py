@@ -8,7 +8,7 @@ from queries.relational_algebra_processor import RelationalAlgebraProcessor
 
 class Node:
     def __init__(self, input_relational_instruction: str = "", input_processor: RelationalAlgebraProcessor = None,
-                 input_label: str = "A"):
+                 input_label: str = "A", expression_list: list[str] = None):
         self.processor = input_processor
         self.content: pd.DataFrame = pd.DataFrame()
         self.left_children = None
@@ -20,6 +20,7 @@ class Node:
         self.label = input_label
         self.edges = None
         self.current_table = None
+        self.expression_list = expression_list
 
     def analyze_node_instruction(self):
         # sourcery skip: use-getitem-for-re-match-groups, use-named-expression
@@ -28,9 +29,8 @@ class Node:
          and the tables are word1 and word2"""
         cartesian_match = re.search(r"(\w+) ⨯ (\w+)", self.relational_instruction)
         selection_match = re.search(r"σ\[(\w+)([<>=!]+)(.*)(?:\]\•)(\w+)(?:\•)", self.relational_instruction)
-        projection_match = re.search(r"π\[((.*))\](?:\•(\w+))?", self.relational_instruction)
-        # projection_match = re.search(r"π\[(\w+)", self.relational_instruction)
-        join_match = re.search(r"(\w+) ⋈ •(.*)• (\w+)", self.relational_instruction)
+        projection_match = re.search(r"π\[(.*)\](?:\•(\w+)\•)?", self.relational_instruction)
+        join_match = re.search(r"\((\w+) ⋈ •(\w+)=(\w+)• (\w+)\)", self.relational_instruction)
         if cartesian_match:
             table_a, table_b = cartesian_match.groups()
             self.cartesian_operation(table_a, table_b)
@@ -39,24 +39,43 @@ class Node:
             self.current_table = table
             self.selection_operation(column, operator, value, desired_table=table)
         elif projection_match:
-            projection_groups = projection_match.groups()
-            column_list = projection_groups[0].split(",")
-            if len(projection_groups) == 3:
-                self.current_table = projection_groups[2]
-            self.projection_operation(column_list)
+            column_list, projection_table = projection_match.groups()
+            return
         elif join_match:
+            left_table, left_column, right_take, right_column = join_match.groups()
             table_a, restriction, table_b = join_match.groups()
             restriction_match = re.search(r"(\w+)\.(.*)([<>=!]+)(\w+)\.(.*)", restriction)
             left_table, left_column, operator, right_table, right_column = restriction_match.groups()
             self.join_operation(table_a, table_b, left_column, right_column)
         self.edges = self.get_edge_list()
 
+    def create_children(self, input_instruction: str):
+        new_label = self.increment_current_label()
+        new_node = Node(input_relational_instruction=input_instruction, input_processor=self.processor,
+                        input_label=new_label)
+        if self.left_children is None and self.right_children is None:
+            self.left_children = new_node
+            new_node.father = self
+        elif self.left_children is not None and self.right_children is None:
+            self.right_children = new_node
+            new_node.father = self
+        elif self.left_children is None:
+            print("Error: left children is None and right children is not None")
+            self.right_children = new_node
+            new_node.father = self
+        return new_node
+
+    def increment_current_label(self):
+        return chr(ord(self.label) + 1)
+
     def projection_operation(self, column_list: list[str]):
+        """Perform a projection operation on the current node, using pandas"""
         new_content = self.processor.projection(self.content, column_list)
         self.content = new_content
         self.size = len(self.content)
 
     def selection_operation(self, column: str, operator: str, value: str, desired_table: str = ""):
+        """Perform a selection operation on the current node, using pandas"""
         if "'" in column:
             column = column.replace("'", "")
         if "'" in value:
@@ -88,6 +107,7 @@ class Node:
         return left_content, right_content
 
     def cartesian_operation(self, table_a: str, table_b: str):
+        """Perform a cartesian product operation on the current node, using pandas"""
         left_content, right_content = self.merge_preparation(table_a, table_b)
         new_content = self.processor.cartesian_product(left_content, right_content)
         self.content = new_content
@@ -95,6 +115,7 @@ class Node:
         self.relational_instruction = "SELF"
 
     def join_operation(self, table_a: str, table_b: str, column_a: str, column_b: str):
+        """Perform a join operation on the current node, using pandas"""
         left_content, right_content = self.merge_preparation(table_a, table_b)
         new_content = self.processor.join(left_content, right_content, column_a, column_b)
         self.content = new_content
@@ -140,6 +161,9 @@ class Node:
             return [left_edge]
         elif right_edge:
             return [right_edge]
+
+    def __str__(self):
+        return f"Node {self.label}, {self.relational_instruction}"
 
 
 def __main():
