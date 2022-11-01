@@ -141,11 +141,14 @@ def get_sql_instruction_example_D():
 def get_split_example():
     rat = RelationalAlgebraSplitter()
     sql_instruction = get_sql_instruction_example_C()
+    sql_d = get_sql_instruction_example_D()
     return rat.split_pipeline(sql_instruction)
 
 
 def __main():
     aux = get_split_example()
+    # Create a regex to match infinite words separated by commas
+    regex = re.compile(r"(\w+)(,\s*\w+)*")
     return
 
 
