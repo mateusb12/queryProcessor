@@ -21,6 +21,7 @@ class Tree:
         self.current_index = 0
         self.consumed_instructions = []
         self.current_instruction = self.expressions[0]
+        self.instruction_dict = {}
 
     def build_tree(self):
         root_node = Node(self.current_instruction, self.processor, self.current_label)
@@ -103,6 +104,7 @@ class Tree:
     def fix_single_label(self, input_node: Node):
         new_label = chr(self.current_index + 64)
         input_node.label = new_label
+        self.instruction_dict[new_label] = input_node.relational_instruction
         left = input_node.left_children
         right = input_node.right_children
         self.current_index += 1
@@ -187,8 +189,8 @@ class Tree:
         return join_by_column_dict, join_by_index_dict
 
 
-def build_example_tree() -> Tree:
-    relational_algebra_instructions = get_optimized_example()
+def build_example_tree(instruction_example: str = get_sql_instruction_example_D()) -> Tree:
+    relational_algebra_instructions = get_optimized_example(instruction_example)
     t = Tree(relational_algebra_instructions)
     t.build_tree()
     return t

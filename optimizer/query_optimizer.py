@@ -140,15 +140,6 @@ class QueryOptimizer:
                             break
         return
 
-    # def fix_query(self):
-    #     for index, item in enumerate(self.instructions):
-    #         if defective_regex := re.match(r"(?:.*)\•(\w+)\•(\•\w+\•)", item):
-    #             normal, error = defective_regex.groups()
-    #             error_size = len(error)
-    #             fixed_string = item[:-error_size]
-    #             self.instructions[index] = fixed_string
-    #     return
-
     def export_query_plan_in_tree_format(self) -> dict:
         join_instructions_column_dict, join_instructions_index_dict = self.__join_side_analysis()
         query_dict = {0: self.instructions[0]}
@@ -170,10 +161,10 @@ class QueryOptimizer:
                 query_dict[index] = item
             continue
 
-def get_optimized_example() -> list[str]:
+def get_optimized_example(instruction_example: str = get_sql_instruction_example_D()) -> list[str]:
     qt = RelationalAlgebraProcessor()
     column_dict = qt.export_all_columns()
-    instruction_example = get_sql_instruction_example_D()
+    # instruction_example = get_sql_instruction_example_D()
     instruction_set = relational_algebra_wrapper(instruction_example)
     qo = QueryOptimizer(instruction_set, column_dict)
     return qo.optimizer_pipeline()
