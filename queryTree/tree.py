@@ -28,7 +28,31 @@ class Tree:
         self.root_node = root_node
         self.current_node = root_node
         self.analyze_instruction(self.current_instruction, self.root_node)
+        self.fix_tree_labels()
+        self.collect_all_edges()
         self.unnest_edge_list()
+
+    def collect_all_edges(self):
+        """This function loops through the tree left children and right children and collect all the edges"""
+        return self.collect_single_edge(self.root_node)
+
+    def collect_single_edge(self, input_node: Node):
+        if input_node is None:
+            return []
+        if input_node.is_leaf():
+            return []
+        self_edges = input_node.get_edge_list()
+        left = input_node.left_children
+        right = input_node.right_children
+        if left is not None and right is None:
+            remaining = self.collect_single_edge(left)
+            return self_edges + remaining
+        if left is not None:
+            left_edges = self.collect_single_edge(left)
+            right_edges = self.collect_single_edge(right)
+            return self_edges + left_edges + right_edges
+        if right is not None:
+            return self.collect_single_edge(right)
 
     def analyze_instruction(self, current_instruction: str, node: Node, desired_table: str = ""):
         # sourcery skip: use-named-expression
@@ -71,6 +95,24 @@ class Tree:
             selection_new_instruction, selection_node = self.create_children_from_instruction(node, current_instruction)
             selection_output = self.analyze_instruction(selection_new_instruction, selection_node)
             return self.current_instruction
+
+    def fix_tree_labels(self):
+        self.current_index = 1
+        self.fix_single_label(self.root_node)
+
+    def fix_single_label(self, input_node: Node):
+        new_label = chr(self.current_index + 64)
+        input_node.label = new_label
+        left = input_node.left_children
+        right = input_node.right_children
+        self.current_index += 1
+        if left is not None and right is None:
+            self.fix_single_label(left)
+        if left is not None and right is not None:
+            self.fix_single_label(left)
+            self.fix_single_label(right)
+        if left is None and right is None:
+            return 0
 
     def create_children_from_instruction(self, input_node: Node, next_instruction: str):
         upcoming_instruction = self.expressions[self.current_index + 1]

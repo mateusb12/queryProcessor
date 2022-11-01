@@ -49,6 +49,9 @@ class Node:
             self.join_operation(table_a, table_b, left_column, right_column)
         self.edges = self.get_edge_list()
 
+    def is_leaf(self):
+        return self.left_children is None and self.right_children is None
+
     def create_children(self, input_instruction: str, input_label: str = "A"):
         new_node = Node(input_relational_instruction=input_instruction, input_processor=self.processor,
                         input_label=input_label)
@@ -145,9 +148,6 @@ class Node:
         self.father.right_children = self.sibling
 
     def get_edge_list(self):
-        if self.right_children is None:
-            alternative_label = chr(ord(self.label) - 1)
-            self.left_children.label = alternative_label
         left_children_label = self.left_children.label if self.left_children else None
         right_children_label = self.right_children.label if self.right_children else None
         left_edge = [self.label, left_children_label] if left_children_label else None
