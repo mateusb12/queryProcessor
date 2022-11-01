@@ -49,10 +49,9 @@ class Node:
             self.join_operation(table_a, table_b, left_column, right_column)
         self.edges = self.get_edge_list()
 
-    def create_children(self, input_instruction: str):
-        new_label = self.increment_current_label()
+    def create_children(self, input_instruction: str, input_label: str = "A"):
         new_node = Node(input_relational_instruction=input_instruction, input_processor=self.processor,
-                        input_label=new_label)
+                        input_label=input_label)
         if self.left_children is None and self.right_children is None:
             self.left_children = new_node
             new_node.father = self

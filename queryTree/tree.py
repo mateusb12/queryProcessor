@@ -13,40 +13,25 @@ class Tree:
         # self.expressions = relational_algebra_expressions[::-1]
         self.expressions = relational_algebra_expressions
         self.processor = RelationalAlgebraProcessor()
-        self.root_node = None
+        self.root_node = Node()
+        self.current_node = Node()
         self.current_label = "A"
         self.edge_pot = []
         self.join_by_column_dict, join_by_index_dict = self.join_side_analysis(self.expressions)
-        self.root_none = Node()
         self.current_index = 0
         self.consumed_instructions = []
         self.current_instruction = self.expressions[0]
 
     def build_tree(self):
         root_node = Node(self.current_instruction, self.processor, self.current_label)
+        self.increment_instruction(self.current_instruction)
         self.root_node = root_node
-        count = 1
-        while count != 5:
-            self.analyze_instruction(self.current_instruction, self.root_node)
-            count += 1
-
-        # for index, instruction in enumerate(self.expressions):
-        #     self.current_index = index
-        #     if index == 0:
-        #         continue
-        #     self.analyze_instruction(instruction, current_node)
-        #     self.consumed_instructions.append(instruction)
-        # current_node.create_father(relational_instruction=instruction, label=new_label)
-        # old_table = current_node.current_table
-        # old_content = current_node.content
-        # current_node = current_node.father
-        # current_node.analyze_node_instruction()
-        # self.edge_pot.append(current_node.edges)
-        # new_content = current_node.content
-        # new_table = current_node.current_table
+        self.current_node = root_node
+        self.analyze_instruction(self.current_instruction, self.root_node)
         self.unnest_edge_list()
 
     def analyze_instruction(self, next_instruction: str, node: Node, desired_table: str = ""):
+        # sourcery skip: use-named-expression
         cartesian_match = re.search(r"(\w+) ⨯ (\w+)", next_instruction)
         selection_match = re.search(r"σ\[(\w+)([<>=!]+)(.*)(?:\]\•)(\w+)(?:\•)", next_instruction)
         projection_match = re.search(r"π\[(.*)\](?:\•(\w+)\•)?", next_instruction)
@@ -57,36 +42,64 @@ class Tree:
             if projection_table is None:
                 self.increment_instruction(next_instruction)
                 return
-            possible_corresponding = self.expressions[self.current_index:]
-            possible_relatives_dict = self.__get_possible_relatives(possible_corresponding)
-            possible_relatives = possible_relatives_dict[projection_table]
-            if all(relative in self.consumed_instructions for relative in possible_relatives):
-                return 0
+            if relatives_test := self.check_for_relatives(projection_table):
+                self.create_leaf(next_instruction, node)
+                return self.current_instruction
+            projection_new_instruction, projection_node = self.create_children_from_instruction(node, next_instruction)
+            projection_output = self.analyze_instruction(projection_new_instruction, projection_node)
+            return self.current_instruction
         elif join_match:
             left_table, left_column, right_take, right_column = join_match.groups()
             left_size = len(self.join_by_column_dict[left_table])
-            following_instruction = self.expressions[self.current_index + 1]
+            left_instruction, join_node = self.create_children_from_instruction(node, next_instruction)
             if left_size == 1:
-                new_children = node.create_children(input_instruction=following_instruction)
-                self.increment_instruction(following_instruction)
-                left_output = self.analyze_instruction(following_instruction, new_children)
+                left_output = self.analyze_instruction(left_instruction, join_node)
             right_size = len(self.join_by_column_dict[right_column])
             if right_size == 2:
-                self.increment_instruction(self.current_instruction)
-                current_instruction = self.expressions[self.current_index]
-                new_children = node.create_children(input_instruction=current_instruction)
-                self.consumed_instructions.append(following_instruction)
-                right_output = self.analyze_instruction(current_instruction, new_children)
-            pass
+                right_instruction, right_node = self.create_children_from_instruction(join_node, next_instruction)
+                right_output = self.analyze_instruction(right_instruction, right_node)
+        elif selection_match:
+            selection_column, selection_operator, selection_value, selection_table = selection_match.groups()
+            relatives_test = self.check_for_relatives(selection_table)
+            if relatives_test:
+                return self.current_instruction
+            selection_new_instruction, selection_node = self.create_children_from_instruction(node, next_instruction)
+            selection_output = self.analyze_instruction(selection_new_instruction, selection_node)
+            return self.current_instruction
+
+    def create_children_from_instruction(self, input_node: Node, next_instruction: str):
+        upcoming_instruction = self.expressions[self.current_index + 1]
+        new_node = input_node.create_children(input_instruction=next_instruction, input_label=self.current_label)
+        self.current_node = new_node
+        self.increment_instruction(upcoming_instruction)
+        return upcoming_instruction, new_node
+
+    def check_for_relatives(self, table_tag: str) -> bool:
+        possible_corresponding = [item for item in self.expressions if item not in self.consumed_instructions]
+        possible_relatives_dict = self.__get_possible_relatives(possible_corresponding)
+        try:
+            possible_relatives = possible_relatives_dict[table_tag]
+        except KeyError:
+            return True
+        return all((relative in self.consumed_instructions for relative in possible_relatives))
+
+    def create_leaf(self, input_instruction: str, input_node: Node):
+        return input_node.create_children(input_instruction, self.current_label)
 
     def increment_current_label(self):
-        self.current_label = chr(ord(self.current_label) + 1)
+        current_label = self.current_label
+        new_label = chr(len(self.consumed_instructions) + 65)
+        self.current_label = new_label
         return self.current_label
 
     def increment_instruction(self, input_instruction: str):
         self.current_index += 1
-        self.current_instruction = self.expressions[self.current_index]
+        next_instruction = self.expressions[self.current_index]
+        self.current_instruction = next_instruction
+        if input_instruction in self.consumed_instructions:
+            raise ValueError("Instruction already consumed")
         self.consumed_instructions.append(input_instruction)
+        self.increment_current_label()
 
     def unnest_edge_list(self):
         unnested_list = []
