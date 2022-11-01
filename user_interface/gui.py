@@ -9,6 +9,8 @@ class QueryGUI:
         self.window = tk.Tk()
         self.query_entry = tk.Entry()
         self.execute_button = tk.Button()
+        self.label = tk.Label(self.window, text="oi")
+
         self.set_window_config()
         self.set_entry_config()
         self.set_button_config()

@@ -30,40 +30,47 @@ class Tree:
         self.analyze_instruction(self.current_instruction, self.root_node)
         self.unnest_edge_list()
 
-    def analyze_instruction(self, next_instruction: str, node: Node, desired_table: str = ""):
+    def analyze_instruction(self, current_instruction: str, node: Node, desired_table: str = ""):
         # sourcery skip: use-named-expression
-        cartesian_match = re.search(r"(\w+) ⨯ (\w+)", next_instruction)
-        selection_match = re.search(r"σ\[(\w+)([<>=!]+)(.*)(?:\]\•)(\w+)(?:\•)", next_instruction)
-        projection_match = re.search(r"π\[(.*)\](?:\•(\w+)\•)?", next_instruction)
-        join_match = re.search(r"\((\w+) ⋈ •(\w+)=(\w+)• (\w+)\)", next_instruction)
+        cartesian_match = re.search(r"(\w+) ⨯ (\w+)", current_instruction)
+        selection_match = re.search(r"σ\[(\w+)([<>=!]+)(.*)(?:\]\•)(\w+)(?:\•)", current_instruction)
+        projection_match = re.search(r"π\[(.*)\](?:\•(\w+)\•)?", current_instruction)
+        join_match = re.search(r"\((\w+) ⋈ •(\w+)=(\w+)• (\w+)\)", current_instruction)
 
         if projection_match:
             column_list, projection_table = projection_match.groups()
             if projection_table is None:
-                self.increment_instruction(next_instruction)
+                self.increment_instruction(current_instruction)
                 return
             if relatives_test := self.check_for_relatives(projection_table):
-                self.create_leaf(next_instruction, node)
+                self.create_leaf(current_instruction, node)
                 return self.current_instruction
-            projection_new_instruction, projection_node = self.create_children_from_instruction(node, next_instruction)
+            projection_new_instruction, projection_node = self.create_children_from_instruction(node,
+                                                                                                current_instruction)
             projection_output = self.analyze_instruction(projection_new_instruction, projection_node)
             return self.current_instruction
         elif join_match:
-            left_table, left_column, right_take, right_column = join_match.groups()
+            left_table, left_column, right_table, right_column = join_match.groups()
             left_size = len(self.join_by_column_dict[left_table])
-            left_instruction, join_node = self.create_children_from_instruction(node, next_instruction)
+            left_instruction, join_node = self.create_children_from_instruction(node, current_instruction)
             if left_size == 1:
                 left_output = self.analyze_instruction(left_instruction, join_node)
+                self.current_index += 1
+                self.current_instruction = self.expressions[self.current_index]
+                right_instruction = self.expressions[self.current_index]
             right_size = len(self.join_by_column_dict[right_column])
             if right_size == 2:
-                right_instruction, right_node = self.create_children_from_instruction(join_node, next_instruction)
-                right_output = self.analyze_instruction(right_instruction, right_node)
+                right_output = self.analyze_instruction(self.current_instruction, join_node)
+                # right_instruction, right_node = self.create_children_from_instruction(join_node,
+                #                                                                       self.current_instruction)
+                # right_output = self.analyze_instruction(right_instruction, right_node)
         elif selection_match:
             selection_column, selection_operator, selection_value, selection_table = selection_match.groups()
             relatives_test = self.check_for_relatives(selection_table)
             if relatives_test:
+                self.create_leaf(current_instruction, node)
                 return self.current_instruction
-            selection_new_instruction, selection_node = self.create_children_from_instruction(node, next_instruction)
+            selection_new_instruction, selection_node = self.create_children_from_instruction(node, current_instruction)
             selection_output = self.analyze_instruction(selection_new_instruction, selection_node)
             return self.current_instruction
 
@@ -71,6 +78,8 @@ class Tree:
         upcoming_instruction = self.expressions[self.current_index + 1]
         new_node = input_node.create_children(input_instruction=next_instruction, input_label=self.current_label)
         self.current_node = new_node
+        if next_instruction not in self.consumed_instructions:
+            self.consumed_instructions.append(next_instruction)
         self.increment_instruction(upcoming_instruction)
         return upcoming_instruction, new_node
 
