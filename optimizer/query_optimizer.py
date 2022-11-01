@@ -173,7 +173,7 @@ class QueryOptimizer:
 def get_optimized_example() -> list[str]:
     qt = RelationalAlgebraProcessor()
     column_dict = qt.export_all_columns()
-    instruction_example = get_sql_instruction_example_C()
+    instruction_example = get_sql_instruction_example_D()
     instruction_set = relational_algebra_wrapper(instruction_example)
     qo = QueryOptimizer(instruction_set, column_dict)
     return qo.optimizer_pipeline()

@@ -59,11 +59,9 @@ class Tree:
                 self.current_instruction = self.expressions[self.current_index]
                 right_instruction = self.expressions[self.current_index]
             right_size = len(self.join_by_column_dict[right_column])
-            if right_size == 2:
+            if right_size in {1, 2}:
                 right_output = self.analyze_instruction(self.current_instruction, join_node)
-                # right_instruction, right_node = self.create_children_from_instruction(join_node,
-                #                                                                       self.current_instruction)
-                # right_output = self.analyze_instruction(right_instruction, right_node)
+            print("done!")
         elif selection_match:
             selection_column, selection_operator, selection_value, selection_table = selection_match.groups()
             relatives_test = self.check_for_relatives(selection_table)
@@ -148,8 +146,6 @@ class Tree:
 
 
 def build_example_tree() -> Tree:
-    # instruction_example = get_sql_instruction_example_D()
-    # relational_algebra_instructions = relational_algebra_wrapper(instruction_example)
     relational_algebra_instructions = get_optimized_example()
     t = Tree(relational_algebra_instructions)
     t.build_tree()
