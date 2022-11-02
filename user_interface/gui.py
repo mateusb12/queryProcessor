@@ -147,7 +147,11 @@ class QueryGUI:
             example_sql = self.query_entry.get()
         else:
             example_sql = self.drop_down_options[drop_down_choice]
-        example_tree = build_example_tree(example_sql)
+        try:
+            example_tree = build_example_tree(example_sql)
+        except IndexError:
+            messagebox.showerror("Error", "Problem when building the tree")
+            return ""
         nxt = NetworkNxTree(example_tree)
         nxt.draw_graph(ax)
         self.canvas = FigureCanvasTkAgg(fig, master=self.window)
