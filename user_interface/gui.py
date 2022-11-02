@@ -12,6 +12,8 @@ from queryTree.network_tree import NetworkNxTree
 from queryTree.tree import build_example_tree
 from networkx.drawing.nx_pydot import graphviz_layout
 
+from queryTree.utils import break_down_sql_line
+
 
 class QueryGUI:
     """This class creates a window with a text entry box and a button.
@@ -19,13 +21,14 @@ class QueryGUI:
 
     def __init__(self):
         self.window = tk.Tk()
-        self.canvas = tk.Canvas(self.window, width=600, height=700, relief='raised')
-        self.anchor_point_x = 250
+        self.canvas = tk.Canvas(self.window, width=300, height=500, relief='raised')
+        self.anchor_point_x = 20
         self.anchor_point_y = 90
         self.query_entry = tk.Entry()
         self.execute_button = tk.Button()
         self.entry_label = tk.Label()
         self.answer_label = tk.Label()
+        self.relational_label = tk.Label()
         self.drop_down_options = self.__get_drop_down_options_dict()
         self.drop_down = None
         self.drop_down_menu = None
@@ -48,12 +51,17 @@ class QueryGUI:
         self.set_entry_label_config(x=self.anchor_point_x + 140, y=self.anchor_point_y - 25)
         self.set_button_config(x=self.anchor_point_x + 170, y=self.anchor_point_y + 30)
         self.set_answer_label_config(x=self.anchor_point_x + 180, y=self.anchor_point_y + 80)
+        self.set_relational_label_config(x=self.anchor_point_x + 600, y=self.anchor_point_y + 120)
 
     def set_window_config(self):
         self.window.title("Query GUI")
-        self.window.geometry("1000x700")
+        self.window.geometry("1100x700")
         self.window.resizable(False, False)
         self.window.configure(bg="white")
+
+    def set_relational_label_config(self, x: int, y: int):
+        self.relational_label = tk.Label(self.window, text="RELATIONAL ALGEBRA", bg="white")
+        self.relational_label.place(x=x, y=y)
 
     def set_entry_config(self, x: int, y: int):
         self.query_entry = tk.Entry(self.window, width=50, font=("Arial", 12))
@@ -84,16 +92,16 @@ class QueryGUI:
 
     def event_execute_query(self):
         entry_text = self.query_entry.get()
-        new_line_text = '\n'.join(entry_text[i:i + 50] for i in range(0, len(entry_text), 50))
+        new_line_text = break_down_sql_line(entry_text)
         text_size = len(entry_text)
         self.answer_label.config(text=new_line_text)
-        answer_label_positions = self.answer_label.place_info()
-        left_margin = 1.3 * text_size
-        new_x = int(answer_label_positions['x']) - left_margin
-        new_y = answer_label_positions['y']
-        self.answer_label.place(x=new_x, y=new_y)
-        # self.__plot_placeholder_chart_on_canvas()
-        self.plot_tree_graph_on_canvas()
+        left_margin = 0.35 * text_size
+        # answer_label_positions = self.answer_label.place_info()
+        # new_x = int(answer_label_positions['x']) - left_margin
+        # new_y = answer_label_positions['y']
+        self.answer_label.place(x=600-left_margin, y=10)
+        legend_text = self.plot_tree_graph_on_canvas()
+        self.relational_label.config(text=legend_text)
 
     def event_mouse_motion(self, event):
         x, y = event.x, event.y
@@ -123,9 +131,9 @@ class QueryGUI:
         df_bar_example.plot.bar(x="Bucket Index", y="Collision amount", color=df_bar_example["Color"], ax=ax, zorder=3)
         self.canvas = FigureCanvasTkAgg(fig, master=self.window)
         self.canvas.draw()
-        self.canvas.get_tk_widget().place(x=200, y=200)
+        self.canvas.get_tk_widget().place(x=5, y=200)
 
-    def plot_tree_graph_on_canvas(self):
+    def plot_tree_graph_on_canvas(self) -> str:
         fig, ax = plt.subplots()
         # example_sql = get_sql_instruction_example_C()
         drop_down_choice = self.drop_down_menu.get()
@@ -135,7 +143,8 @@ class QueryGUI:
         nxt.draw_graph(ax)
         self.canvas = FigureCanvasTkAgg(fig, master=self.window)
         self.canvas.draw()
-        self.canvas.get_tk_widget().place(x=200, y=200)
+        self.canvas.get_tk_widget().place(x=-40, y=200)
+        return nxt.get_legend_text()
 
 
 def __main():

@@ -15,6 +15,9 @@ class NetworkNxTree:
         self.graph = nx.Graph()
         self.graph.add_edges_from(self.edges)
 
+    def get_legend_text(self):
+        return "".join(f"{key} → {value}\n" for key, value in self.instruction_dict.items())
+
     def draw_graph(self, input_ax=None):
         pos = graphviz_layout(self.graph, prog="dot")
         nx.draw(self.graph, pos, with_labels=True, node_color="skyblue", node_size=1500, alpha=0.5, arrows=True,
@@ -40,6 +43,7 @@ def __main():
     example_sql = get_sql_instruction_example_C()
     example_tree = build_example_tree(example_sql)
     nxt = NetworkNxTree(example_tree)
+    aux = nxt.get_legend_text()
     nxt.draw_graph()
     pass
 
