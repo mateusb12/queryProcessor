@@ -1,6 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
 
+import pandas as pd
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 from queries.relational_algebra_splitter import get_sql_instruction_example_A, get_sql_instruction_example_B, \
     get_sql_instruction_example_C, get_sql_instruction_example_D
 
@@ -11,7 +15,8 @@ class QueryGUI:
 
     def __init__(self):
         self.window = tk.Tk()
-        self.anchor_point_x = 20
+        self.canvas = tk.Canvas(self.window, width=600, height=700, relief='raised')
+        self.anchor_point_x = 250
         self.anchor_point_y = 90
         self.query_entry = tk.Entry()
         self.execute_button = tk.Button()
@@ -24,7 +29,7 @@ class QueryGUI:
 
     def main_pipeline(self):
         self.set_config_pipeline()
-        self.mouse_position_capturing()
+        self.__mouse_position_capturing()
         self.window.mainloop()
 
     @staticmethod
@@ -34,7 +39,7 @@ class QueryGUI:
 
     def set_config_pipeline(self):
         self.set_window_config()
-        self.set_drop_down_config(self.anchor_point_x+160, self.anchor_point_y-70)
+        self.set_drop_down_config(self.anchor_point_x + 160, self.anchor_point_y - 70)
         self.set_entry_config(x=self.anchor_point_x, y=self.anchor_point_y)
         self.set_entry_label_config(x=self.anchor_point_x + 140, y=self.anchor_point_y - 25)
         self.set_button_config(x=self.anchor_point_x + 170, y=self.anchor_point_y + 30)
@@ -42,7 +47,7 @@ class QueryGUI:
 
     def set_window_config(self):
         self.window.title("Query GUI")
-        self.window.geometry("500x500")
+        self.window.geometry("1000x700")
         self.window.resizable(False, False)
         self.window.configure(bg="white")
 
@@ -55,14 +60,14 @@ class QueryGUI:
         self.drop_down_menu.set("Select a SQL example")
         options = ["A", "B", "C", "D"]
         self.drop_down = tk.OptionMenu(self.window, self.drop_down_menu, options[0], *options[1:],
-                                       command=self.drop_down_function)
+                                       command=self.event_drop_down_function)
         self.drop_down.pack()
         self.drop_down.place(x=x, y=y)
         # self.drop_down["drop_down_menu"].config(selectcolor="red")
 
     def set_button_config(self, x: int, y: int):
-        self.execute_button = tk.Button(self.window, text="Execute", font=("Arial", 12), command=self.execute_query,
-                                        bg='brown', fg='white')
+        self.execute_button = tk.Button(self.window, text="Execute", font=("Arial", 12),
+                                        command=self.event_execute_query, bg='brown', fg='white')
         self.execute_button.place(x=x, y=y)
 
     def set_entry_label_config(self, x: int, y: int):
@@ -73,27 +78,45 @@ class QueryGUI:
         self.answer_label = tk.Label(self.window, text="ANSWER", bg="white", justify="center")
         self.answer_label.place(x=x, y=y)
 
-    def execute_query(self):
+    def event_execute_query(self):
         entry_text = self.query_entry.get()
         text_size = len(entry_text)
         self.answer_label.config(text=entry_text)
         answer_label_positions = self.answer_label.place_info()
-        new_x = int(answer_label_positions['x']) - 200
+        new_x = int(answer_label_positions['x']) - 400
         new_y = answer_label_positions['y']
         self.answer_label.place(x=new_x, y=new_y)
+        self.__plot_chart_on_canvas()
 
-    def mouse_motion(self, event):
+    def event_mouse_motion(self, event):
         x, y = event.x, event.y
         self.window.title(f'{x}, {y}')
 
-    def mouse_position_capturing(self):
-        self.window.bind('<Motion>', self.mouse_motion)
-
-    def drop_down_function(self, event):
+    def event_drop_down_function(self, event):
         self.query_entry.delete(0, tk.END)
         drop_down_choice = self.drop_down_menu.get()
         choice_sql = self.drop_down_options[drop_down_choice]
         self.query_entry.insert(0, choice_sql)
+
+    def __mouse_position_capturing(self):
+        self.window.bind('<Motion>', self.event_mouse_motion)
+
+    def __plot_chart_on_canvas(self):
+        fig, ax = plt.subplots()
+        fig.set_size_inches(5, 4)
+        fig.set_dpi(100)
+
+        plt.grid(visible=True, which='major', color='#666666', linestyle='-', zorder=0, linewidth=0.35)
+        plt.ylabel("Collision amount")
+        plt.xlabel("Bucket Index")
+        colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]
+        df_bar_example = pd.DataFrame({"Bucket Index": [1, 2, 3, 4, 5, 6, 7],
+                                       "Collision amount": [1, 2, 3, 4, 5, 6, 7],
+                                       "Color": colors})
+        df_bar_example.plot.bar(x="Bucket Index", y="Collision amount", color=df_bar_example["Color"], ax=ax, zorder=3)
+        self.canvas = FigureCanvasTkAgg(fig, master=self.window)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().place(x=200, y=200)
 
 
 def __main():
