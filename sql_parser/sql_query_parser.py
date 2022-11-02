@@ -10,7 +10,7 @@ class QueryParser:
         self.parse_pipeline()
 
     def parse_pipeline(self):
-        core_match = self.__core_parser()
+        self.__core_parser()
         extra_matches = self.__extra_parser()
         if extra_matches == ["WHERE"]:
             core_regex = "(SELECT )(.*)( FROM )(.*)( WHERE )(.*)"
@@ -35,11 +35,11 @@ class QueryParser:
 
     @staticmethod
     def analyze_where(where_sql: str):
-        if " AND " not in where_sql:
-            where_match = re.match("(\w+)\.(\w+)(\s*)(=|<|>)(\s*)(\w+)", where_sql)
-        else:
-            # TODO: implement a correct way of capturing multiple ANDS
-            where_match = re.match("(\w+)\.(\w+)(\s*)(=|<|>)(\s*)(\w+)( AND )(.*)", where_sql)
+        and_amount = where_sql.count(" AND ")
+        core_regex = " WHERE (.*)"
+        for _ in range(and_amount):
+            core_regex += " AND (.*)"
+        where_match = re.match(core_regex, where_sql)
         if where_match is None:
             raise ValueError("Invalid SQL syntax")
 
@@ -51,13 +51,14 @@ class QueryParser:
         else:
             raise ValueError("Wrong join condition found")
 
-    def __core_parser(self) -> bool:
+    def __core_parser(self):
         core = []
         if "SELECT " in self.sql:
             core.append("SELECT")
         if " FROM " in self.sql:
             core.append("FROM")
-        return len(core) == 2
+        if len(core) != 2:
+            raise ValueError("Invalid SQL syntax")
 
     def __extra_parser(self):
         pot = []

@@ -13,6 +13,7 @@ from queryTree.tree import build_example_tree
 from networkx.drawing.nx_pydot import graphviz_layout
 
 from queryTree.utils import break_down_sql_line
+from sql_parser.sql_query_parser import QueryParser
 
 
 class QueryGUI:
@@ -42,7 +43,8 @@ class QueryGUI:
     @staticmethod
     def __get_drop_down_options_dict() -> dict:
         return {"A": get_sql_instruction_example_A(), "B": get_sql_instruction_example_B(),
-                "C": get_sql_instruction_example_C(), "D": get_sql_instruction_example_D()}
+                "C": get_sql_instruction_example_C(), "D": get_sql_instruction_example_D(),
+                "none": "aaaaa"}
 
     def set_config_pipeline(self):
         self.set_window_config()
@@ -70,7 +72,7 @@ class QueryGUI:
     def set_drop_down_config(self, x: int, y: int):
         self.drop_down_menu = tk.StringVar(self.window)
         self.drop_down_menu.set("Select a SQL example")
-        options = ["A", "B", "C", "D"]
+        options = list(self.drop_down_options.keys())
         self.drop_down = tk.OptionMenu(self.window, self.drop_down_menu, options[0], *options[1:],
                                        command=self.event_drop_down_function)
         self.drop_down.pack()
@@ -92,6 +94,7 @@ class QueryGUI:
 
     def event_execute_query(self):
         entry_text = self.query_entry.get()
+        parser = QueryParser(entry_text)
         new_line_text = break_down_sql_line(entry_text)
         text_size = len(entry_text)
         self.answer_label.config(text=new_line_text)
@@ -116,28 +119,31 @@ class QueryGUI:
     def __mouse_position_capturing(self):
         self.window.bind('<Motion>', self.event_mouse_motion)
 
-    def __plot_placeholder_chart_on_canvas(self):
-        fig, ax = plt.subplots()
-        fig.set_size_inches(5, 4)
-        fig.set_dpi(100)
-
-        plt.grid(visible=True, which='major', color='#666666', linestyle='-', zorder=0, linewidth=0.35)
-        plt.ylabel("Collision amount")
-        plt.xlabel("Bucket Index")
-        colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]
-        df_bar_example = pd.DataFrame({"Bucket Index": [1, 2, 3, 4, 5, 6, 7],
-                                       "Collision amount": [1, 2, 3, 4, 5, 6, 7],
-                                       "Color": colors})
-        df_bar_example.plot.bar(x="Bucket Index", y="Collision amount", color=df_bar_example["Color"], ax=ax, zorder=3)
-        self.canvas = FigureCanvasTkAgg(fig, master=self.window)
-        self.canvas.draw()
-        self.canvas.get_tk_widget().place(x=5, y=200)
+    # def __plot_placeholder_chart_on_canvas(self):
+    #     fig, ax = plt.subplots()
+    #     fig.set_size_inches(5, 4)
+    #     fig.set_dpi(100)
+    #
+    #     plt.grid(visible=True, which='major', color='#666666', linestyle='-', zorder=0, linewidth=0.35)
+    #     plt.ylabel("Collision amount")
+    #     plt.xlabel("Bucket Index")
+    #     colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]
+    #     df_bar_example = pd.DataFrame({"Bucket Index": [1, 2, 3, 4, 5, 6, 7],
+    #                                    "Collision amount": [1, 2, 3, 4, 5, 6, 7],
+    #                                    "Color": colors})
+    #     df_bar_example.plot.bar(x="Bucket Index", y="Collision amount", color=df_bar_example["Color"],
+    #     ax=ax, zorder=3)
+    #     self.canvas = FigureCanvasTkAgg(fig, master=self.window)
+    #     self.canvas.draw()
+    #     self.canvas.get_tk_widget().place(x=5, y=200)
 
     def plot_tree_graph_on_canvas(self) -> str:
         fig, ax = plt.subplots()
-        # example_sql = get_sql_instruction_example_C()
         drop_down_choice = self.drop_down_menu.get()
-        example_sql = self.drop_down_options[drop_down_choice]
+        if drop_down_choice == "none":
+            example_sql = self.query_entry.get()
+        else:
+            example_sql = self.drop_down_options[drop_down_choice]
         example_tree = build_example_tree(example_sql)
         nxt = NetworkNxTree(example_tree)
         nxt.draw_graph(ax)
