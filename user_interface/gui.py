@@ -77,7 +77,6 @@ class QueryGUI:
                                        command=self.event_drop_down_function)
         self.drop_down.pack()
         self.drop_down.place(x=x, y=y)
-        # self.drop_down["drop_down_menu"].config(selectcolor="red")
 
     def set_button_config(self, x: int, y: int):
         self.execute_button = tk.Button(self.window, text="Execute", font=("Arial", 12),
@@ -94,7 +93,11 @@ class QueryGUI:
 
     def event_execute_query(self):
         entry_text = self.query_entry.get()
-        parser = QueryParser(entry_text)
+        try:
+            parser = QueryParser(entry_text)
+        except ValueError:
+            messagebox.showerror("Error", "Invalid SQL instruction")
+            return
         new_line_text = break_down_sql_line(entry_text)
         text_size = len(entry_text)
         self.answer_label.config(text=new_line_text)
