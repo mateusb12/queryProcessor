@@ -15,14 +15,14 @@ class NetworkNxTree:
         self.graph = nx.Graph()
         self.graph.add_edges_from(self.edges)
 
-    def draw_graph(self):
+    def draw_graph(self, input_ax=None):
         pos = graphviz_layout(self.graph, prog="dot")
         nx.draw(self.graph, pos, with_labels=True, node_color="skyblue", node_size=1500, alpha=0.5, arrows=True,
-                edgecolors="black")
+                edgecolors="black", ax=input_ax)
         ax = plt.gca()
         legend_text = "".join(f"{key} → {value[:30]}\n" for key, value in self.instruction_dict.items())
-        at = self.text_only(plt.gca(), legend_text, loc=1)
-        plt.show()
+        # annotation = self.text_only(plt.gca(), legend_text, loc=1)
+        # plt.show()
         return
 
     @staticmethod

@@ -1,12 +1,16 @@
 import tkinter as tk
 from tkinter import messagebox
 
+import networkx as nx
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from queries.relational_algebra_splitter import get_sql_instruction_example_A, get_sql_instruction_example_B, \
     get_sql_instruction_example_C, get_sql_instruction_example_D
+from queryTree.network_tree import NetworkNxTree
+from queryTree.tree import build_example_tree
+from networkx.drawing.nx_pydot import graphviz_layout
 
 
 class QueryGUI:
@@ -80,13 +84,16 @@ class QueryGUI:
 
     def event_execute_query(self):
         entry_text = self.query_entry.get()
+        new_line_text = '\n'.join(entry_text[i:i + 50] for i in range(0, len(entry_text), 50))
         text_size = len(entry_text)
-        self.answer_label.config(text=entry_text)
+        self.answer_label.config(text=new_line_text)
         answer_label_positions = self.answer_label.place_info()
-        new_x = int(answer_label_positions['x']) - 400
+        left_margin = 1.3 * text_size
+        new_x = int(answer_label_positions['x']) - left_margin
         new_y = answer_label_positions['y']
         self.answer_label.place(x=new_x, y=new_y)
-        self.__plot_chart_on_canvas()
+        # self.__plot_placeholder_chart_on_canvas()
+        self.plot_tree_graph_on_canvas()
 
     def event_mouse_motion(self, event):
         x, y = event.x, event.y
@@ -101,7 +108,7 @@ class QueryGUI:
     def __mouse_position_capturing(self):
         self.window.bind('<Motion>', self.event_mouse_motion)
 
-    def __plot_chart_on_canvas(self):
+    def __plot_placeholder_chart_on_canvas(self):
         fig, ax = plt.subplots()
         fig.set_size_inches(5, 4)
         fig.set_dpi(100)
@@ -114,6 +121,18 @@ class QueryGUI:
                                        "Collision amount": [1, 2, 3, 4, 5, 6, 7],
                                        "Color": colors})
         df_bar_example.plot.bar(x="Bucket Index", y="Collision amount", color=df_bar_example["Color"], ax=ax, zorder=3)
+        self.canvas = FigureCanvasTkAgg(fig, master=self.window)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().place(x=200, y=200)
+
+    def plot_tree_graph_on_canvas(self):
+        fig, ax = plt.subplots()
+        # example_sql = get_sql_instruction_example_C()
+        drop_down_choice = self.drop_down_menu.get()
+        example_sql = self.drop_down_options[drop_down_choice]
+        example_tree = build_example_tree(example_sql)
+        nxt = NetworkNxTree(example_tree)
+        nxt.draw_graph(ax)
         self.canvas = FigureCanvasTkAgg(fig, master=self.window)
         self.canvas.draw()
         self.canvas.get_tk_widget().place(x=200, y=200)
